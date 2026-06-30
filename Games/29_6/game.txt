@@ -1,0 +1,172 @@
+{
+  "equipment": {
+    "zones": [
+      "hexagon"
+    ],
+    "ballsList": [
+      "0x6a01"
+    ]
+  },
+  "players": {
+    "teams": [
+      {
+        "name": "Alpha",
+        "players": [
+          "0x6a62"
+        ]
+      },
+      {
+        "name": "Beta",
+        "players": [
+          "0x6a74"
+        ]
+      }
+    ],
+    "otherPlayers": []
+  },
+  "sequence_rules_list": [
+    {
+      "sequence_block_name": "A",
+      "rule": [
+        {
+          "rule_name": "1",
+          "enabled": "yes",
+          "conditions": [
+            {
+              "type": "player_throwsball",
+              "passer": {
+                "team_name": "Alpha",
+                "players": [
+                  "0x6a62"
+                ]
+              },
+              "receiver": {
+                "team_name": "Beta",
+                "players": [
+                  "0x6a74"
+                ],
+                "zone": null
+              },
+              "ball": "0x6a01"
+            }
+          ],
+          "action": [
+            {
+              "beneficiary": {
+                "team_name": "Alpha",
+                "players": [
+                  "0x6a62"
+                ]
+              },
+              "points": 1
+            },
+            {
+              "beneficiary": {
+                "team_name": "Beta",
+                "players": [
+                  "0x6a74"
+                ]
+              },
+              "points": 1
+            }
+          ],
+          "sound": "Beep",
+          "operator": "or"
+        },
+        {
+          "rule_name": "2",
+          "enabled": "yes",
+          "conditions": [
+            {
+              "type": "player_throwsball",
+              "passer": {
+                "team_name": "Beta",
+                "players": [
+                  "0x6a74"
+                ]
+              },
+              "receiver": {
+                "team_name": "Alpha",
+                "players": [
+                  "0x6a62"
+                ],
+                "zone": null
+              },
+              "ball": "0x6a01"
+            }
+          ],
+          "action": [
+            {
+              "type": "nothing"
+            }
+          ],
+          "sound": "Check",
+          "operator": "and"
+        }
+      ],
+      "penaltySound": "foul"
+    }
+  ],
+  "passive_rules_list": [
+    {
+      "rule_name": "in",
+      "enabled": "yes",
+      "conditions": [
+        {
+          "type": "player_insidefield",
+          "player": {
+            "team_name": null,
+            "players": [
+              "0x6a74"
+            ],
+            "ball": null
+          },
+          "zone": "hexagon"
+        }
+      ],
+      "action": [
+        {
+          "type": "nothing"
+        }
+      ],
+      "sound": "Clap",
+      "operator": "and"
+    },
+    {
+      "rule_name": "in",
+      "enabled": "no",
+      "conditions": [
+        {
+          "type": "player_insidefield",
+          "player": {
+            "team_name": null,
+            "players": [
+              "0x6a62"
+            ],
+            "ball": null
+          },
+          "zone": "hexagon"
+        }
+      ],
+      "action": [
+        {
+          "type": "nothing"
+        }
+      ],
+      "sound": "Clap",
+      "operator": "and"
+    }
+  ],
+  "timed_rules_list": [
+    {
+      "mode": "once",
+      "duration": "3",
+      "action": [
+        {
+          "type": "endgame"
+        }
+      ],
+      "sound": "foul"
+    }
+  ]
+}$$<xml xmlns="https://developers.google.com/blockly/xml"><block type="sequence" id="W0@E$b#Z`4R,ymGVf+ug" x="210" y="-70"><field name="sequence_block_name">A</field><statement name="rule"><block type="rule" id="fALcw@0$YhC?|]kmmc,8"><field name="rule_name">1</field><field name="enable">yes</field><field name="operator">or</field><statement name="event"><block type="condition_throwsball" id="rf|D|_RR#E$nt.^Yo_~A"><statement name="passer"><block type="team" id="R9bhg5J7ai.I.S@m[M]Y"><field name="team_name">Alpha</field><statement name="players_list"><block type="player" id="v^!uJYZz]O)Mf~N+Fq@b"><field name="playerChoice">0x6a62</field></block></statement></block></statement><statement name="ball"><block type="ball" id="k=6p/HmJVpunuV2=3YoZ"><field name="ball_id">0x6a01</field></block></statement><statement name="receiver"><block type="team" id="]%E$]J!@ul;N)5uwQ*e_"><field name="team_name">Beta</field><statement name="players_list"><block type="player" id="|KeWfu_EB0JwjmsTJw6O"><field name="playerChoice">0x6a74</field></block></statement></block></statement></block></statement><statement name="action"><block type="points" id="=wqdW^]L7)]m/t`,PZIP"><field name="sign">positive</field><field name="points">1</field><statement name="awardedplayer"><block type="team" id="d_e)$VH9AlykbLfBXxeu"><field name="team_name">Alpha</field><statement name="players_list"><block type="player" id="[4clsZsn(O#x%7}`,-l]"><field name="playerChoice">0x6a62</field></block></statement></block></statement><next><block type="points" id="u9_KF)v(Q7LaI)Sj_2AP"><field name="sign">positive</field><field name="points">1</field><statement name="awardedplayer"><block type="team" id="peRH7t/1*w,l0n6EAxjd"><field name="team_name">Beta</field><statement name="players_list"><block type="player" id="*S+qhDA`;_T`x7JeaFN6"><field name="playerChoice">0x6a74</field></block></statement></block></statement></block></next></block></statement><value name="sound"><block type="sound" id="o9Zp}Jg:EKYZd{-MwE!F"><field name="soundChoice">Beep</field></block></value><next><block type="rule" id="n/f0ORP7Q{q81{`x*s2r"><field name="rule_name">2</field><field name="enable">yes</field><field name="operator">and</field><statement name="event"><block type="condition_throwsball" id="X9vk/]]3u%7Da7Mnt@Dz"><statement name="passer"><block type="team" id="}[D|ou]2d/ltKMkSPzDH"><field name="team_name">Beta</field><statement name="players_list"><block type="player" id="ODUU[:2NWk@g#pVE:yIl"><field name="playerChoice">0x6a74</field></block></statement></block></statement><statement name="ball"><block type="ball" id="KK:66!gpW;t?w|VXmvfj"><field name="ball_id">0x6a01</field></block></statement><statement name="receiver"><block type="team" id="[;4/7Wn,|$KAE?W*=-Io"><field name="team_name">Alpha</field><statement name="players_list"><block type="player" id="hMHcM5bVX(^RgLlTrrx^"><field name="playerChoice">0x6a62</field></block></statement></block></statement></block></statement><statement name="action"><block type="nothing" id="9rVa[cDylz{fo/3?6+ov"></block></statement><value name="sound"><block type="sound" id="oW{l|Dm_Ux)VoyvouZa}"><field name="soundChoice">Check</field></block></value></block></next></block></statement><value name="sound"><block type="sound" id="P8w+OdOH+%=AfDg4]#-K"><field name="soundChoice">foul</field></block></value></block><block type="rule" id="m{$~9hxs)*@2;Xeu)IFB" x="890" y="50"><field name="rule_name">in</field><field name="enable">yes</field><field name="operator">and</field><statement name="event"><block type="condition_insidefield" id="oTmIF!T=6MQxAf1[;/m9"><statement name="player"><block type="player" id="j:4L$x[M54Rj@XY}ru4s"><field name="playerChoice">0x6a74</field></block></statement><statement name="zone"><block type="zone" id="wdRdbn;{hFnATR0gJ@-5"><field name="zoneChoice">hexagon</field></block></statement></block></statement><statement name="action"><block type="nothing" id="D2SI7VrM[DD?C%BUjL3n"></block></statement><value name="sound"><block type="sound" id="K(~dKxl=JZq45Ft^S*m}"><field name="soundChoice">Clap</field></block></value></block><block type="rule" id="}F@nA!cyZU/_WRrw3s;E" x="1270" y="50"><field name="rule_name">in</field><field name="enable">no</field><field name="operator">and</field><statement name="event"><block type="condition_insidefield" id="ll}G2g?Fz_}p,2f]63(["><statement name="player"><block type="player" id="*M}Ez~Twr(EdVh)Z{jl*"><field name="playerChoice">0x6a62</field></block></statement><statement name="zone"><block type="zone" id="vZ94u=yV0*5X3%e2}@1H"><field name="zoneChoice">hexagon</field></block></statement></block></statement><statement name="action"><block type="nothing" id="{r5#vvhtLz^m],#}LT=0"></block></statement><value name="sound"><block type="sound" id="pNH0NKA}9ZNY_BGw0q.;"><field name="soundChoice">Clap</field></block></value></block><block type="timer" id="`kk)gi`ANC+q}IBhIqWI" x="670" y="590"><field name="timingOption">once</field><field name="duration">3</field><statement name="action"><block type="endgame" id="|s.ztE5:}`p@,Sx+oRK]"></block></statement><value name="sound"><block type="sound" id="KOmy_a*PnS(D2STN-X5R"><field name="soundChoice">foul</field></block></value></block></xml>

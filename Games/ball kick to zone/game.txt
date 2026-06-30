@@ -1,0 +1,48 @@
+{
+  "equipment": {
+    "zones": [
+      "hexagon"
+    ],
+    "ballsList": [
+      "0x6a01"
+    ]
+  },
+  "players": {
+    "teams": [],
+    "otherPlayers": [
+      "0x6a74"
+    ]
+  },
+  "sequence_rules_list": [],
+  "passive_rules_list": [
+    {
+      "rule_name": "",
+      "enabled": "yes",
+      "conditions": [
+        {
+          "type": "player_throwsball",
+          "passer": {
+            "team_name": null,
+            "players": [
+              "0x6a74"
+            ]
+          },
+          "receiver": {
+            "team_name": null,
+            "players": [],
+            "zone": "hexagon"
+          },
+          "ball": "0x6a01"
+        }
+      ],
+      "action": [
+        {
+          "type": "nothing"
+        }
+      ],
+      "sound": "Beep",
+      "operator": "and"
+    }
+  ],
+  "timed_rules_list": []
+}$$<xml xmlns="https://developers.google.com/blockly/xml"><block type="rule" id="p!2m}p[S1ovu)rmvsHC5" x="90" y="90"><field name="rule_name"></field><field name="enable">yes</field><field name="operator">and</field><statement name="event"><block type="condition_throwsball" id="WC^E|cxzvV+B7WmM!-W("><statement name="passer"><block type="player" id="5cVDe,[N%{gB78,H(.as"><field name="playerChoice">0x6a74</field></block></statement><statement name="ball"><block type="ball" id="t}3U#R[vijEZCBaIF)Mr"><field name="ball_id">0x6a01</field></block></statement><statement name="receiver"><block type="zone" id="lES`u;4,r;~bg3JePu*k"><field name="zoneChoice">hexagon</field></block></statement></block></statement><statement name="action"><block type="nothing" id="k)Nmwk#!||BFkkgxfJ|-"></block></statement><value name="sound"><block type="sound" id="sZ^1K;^eX}1.RAyi98Ec"><field name="soundChoice">Beep</field></block></value></block></xml>

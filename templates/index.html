@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+    <meta charset="UTF-8">
+    <meta name = "viewport" content="width-device, initial scale = 1.0">
+    <title>Pozyx Monitor</title>
+</head>
+<body>
+    <div id="tags-list"></div>
+    
+</body>
+<script>
+    function getPositions(){
+        fetch("/positions")
+        .then(result => result.json())
+        .then(values => {
+            const list = document.getElementById("tags-list")
+            list.innerHTML = ""
+
+            Object.entries(values).forEach(([tag_id,position]) => {
+                const block = document.createElement("div")
+                block.innerHTML= `
+                <h3 class="tag_id">${tag_id}</h3>
+                <p>X Position: <span>${Math.round(position.x)}</span>mm</p>
+                <p>Y Position: <span>${Math.round(position.y)}</span>mm</p>
+                <p>Z Position: <span>${Math.round(position.z)}</span>mm</p>
+                `
+                list.appendChild(block)
+            
+            })
+            
+            
+        })
+    }
+    setInterval(getPositions, 300)
+</script>
+</html>

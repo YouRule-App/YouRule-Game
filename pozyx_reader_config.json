@@ -1,0 +1,69 @@
+{
+  "anchors": [
+    {
+      "address": "0x0c55",
+      "x": 1000,
+      "y": 0,
+      "z": 100
+    },
+    {
+      "address": "0x0c0a",
+      "x": 1000,
+      "y": 1000,
+      "z": 100
+    },
+    {
+      "address": "0x6f3e",
+      "x": 0,
+      "y": 1000,
+      "z": 100
+    },
+    {
+      "address": "0x0c25",
+      "x": 0,
+      "y": 0,
+      "z": 100
+    }
+  ],
+  "ball_id": [
+    {
+      "address": "0x6a01",
+      "custom_name": "football",
+      "nickname": "E"
+    }
+  ],
+  "configuration": {
+    "maxNameSize": 30,
+    "maxSoundFileNameSize": 50,
+    "maxSoundSeconds": 5,
+    "maxZoneFileNameSize": 50
+  },
+  "inactiveTags": [
+    {
+      "address": "0x6a2b",
+      "custom_name": "Jake",
+      "nickname": "B"
+    },
+    {
+      "address": "0x6a1f",
+      "custom_name": "",
+      "nickname": "D"
+    },
+    {
+      "address": "0x6a5e",
+      "nickname": "F"
+    }
+  ],
+  "remotetags": [
+    {
+      "address": "0x6a62",
+      "custom_name": "Ali",
+      "nickname": "A"
+    },
+    {
+      "address": "0x6a74",
+      "custom_name": "Ahmed",
+      "nickname": "C"
+    }
+  ]
+}

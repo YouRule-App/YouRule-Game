@@ -1,0 +1,13 @@
+Player Ali:
+(coordinates recorded in cm precision)
+  00:00:328: (x: 561, y: 1179)
+  00:00:963: (x: 673, y: 1236)
+  00:01:218: (x: 533, y: 1245)
+  00:01:285: (x: 533, y: 1245)
+
+Player Ahmed:
+(coordinates recorded in cm precision)
+  00:00:328: (x: 1043, y: 53)
+  00:00:963: (x: 1042, y: 44)
+  00:01:218: (x: 1054, y: 118)
+  00:01:285: (x: 1054, y: 118)

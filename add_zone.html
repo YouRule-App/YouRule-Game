@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Add Zone</title>
+<style>
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #ffffff;
+    color: #1d1d1f;
+    padding: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+
+  h1 { font-size: 22px; margin-bottom: 24px; }
+  h2 { font-size: 16px; margin-bottom: 12px; color: #555; }
+
+
+  .step {
+    background: #f5f5f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .navigate {
+    display: flex;
+    justify-content: left;
+    gap: 10px;
+    margin-top: 20px
+  }
+
+  button, select, input[type=text] {
+    padding: 8px 14px;
+    border: 1px solid #d0d0d0;
+    background: #f5f5f7;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1d1d1f;
+    margin-right: 8px;
+  }
+  input[type=number] {
+    padding: 8px 14px;
+    border: 1px solid #d0d0d0;
+    background: #f5f5f7;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1d1d1f;
+    margin-right: 8px;
+  }
+  button { cursor: pointer; }
+  button:hover { background: #e8e8ea; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
+  .primary { background: #0071e3; color: white; border-color: #0071e3; }
+  .primary:hover:not(:disabled) { background: #005bb5; }
+
+
+  
+  
+
+
+
+  input[type=text] {
+    font-family: ui-monospace, monospace;
+    width: 180px;
+  }
+
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  
+  .label { min-width: 120px; color: #555; font-size: 13px; }
+
+
+  .status {
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 12px;
+    color: #0071e3;
+  }
+  input[type=range] {
+    flex: 1;
+  }
+  .slider-label {
+    font-size: 12px;
+    color: #666;
+    min-width: 90px;
+  }
+  .value-display {
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0071e3;
+    min-width: 30px;
+    text-align: center;
+  }
+  .description {
+    font-size: 13px;
+    color: #555;
+    margin-top: 8px;
+  }
+
+
+
+
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #28a745;
+    width: 0%;
+    transition: width 0.2s ease;
+  }
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+
+  .captured-list {
+    margin-top: 10px;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: #28a745;
+  }
+  .captured-list div { padding: 4px 0; }
+</style>
+</head>
+<body>
+
+
+<h1>Add zone</h1>
+
+
+
+<div class="step">
+  <h2>1. Configure</h2>
+
+
+  <div class="row">
+    <span class="label">Field Shape:</span>
+    <select id="shape-select">
+      <option value="polygon">Polygon</option>
+      <option value="circular">Circular</option>
+    </select>
+  </div>
+
+
+  <div class="row">
+    <span class="label">Calibration Tag Address:</span>
+    <select id="cali-tag">
+        
+    </select>
+  </div>
+    <div class="row" id ="hidden-feature" style="display:block;">
+    <span class="label">No. of corners to be recorded:</span>
+    <input type="number" id="corner-count" value="4">
+    
+  </div>
+  
+
+
+
+
+
+
+
+
+  <div class="status" id="status-sensitivity"></div>
+
+
+
+  <button class="primary" onclick="startCalibration()">Start calibration</button>
+</div>
+
+
+<!-- STEP 2: Capture -->
+<div class="step">
+  <h2>2. Capture points</h2>
+
+
+  <div id="capture-title" style="font-weight: 600; margin-bottom: 4px;">Waiting to start...</div>
+  <div id="capture-instruction" style="font-size: 13px; color: #666;"></div>
+  <div class="status" id="status-text"></div>
+
+
+  <div class="progress">
+    <div class="progress-bar">
+      <div class="progress-fill" id="stillness-fill"></div>
+    </div>
+    <span id="stillness-percent">0%</span>
+    <div class="reading" id="coordinates"></div>
+  </div>
+
+
+  <div class="captured-list" id="captured-points"></div>
+</div>
+
+
+
+<div class="step">
+  <h2>3. Save setup<h2>
+  <div id="unit"></div>
+  <canvas id="preview-canvas" style="display:none; width:100%; aspect-ratio:1; border:1px solid #e0e0e0; border-radius:8px; background:#fafafa; display:block; margin-bottom:12px;"></canvas>
+  <div id="corner-editor" style="margin-bottom:12px"></div>
+  <div id="final-summary" style="font-family: ui-monospace, monospace; font-size: 13px; color: #555; margin-bottom: 12px;">No data yet.</div>
+  <button id="saveconfig-btn" disabled="true" class="primary" onclick="exportModal()">Save Configuration</button>
+  <button onclick="restartCalibration()">Restart</button>
+  
+</div>
+<div class="navigate">
+   <button onclick="window.location.href='settings.html#zones'">← Back to settings</button>
+
+</div>
+<div id="export-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999;">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:24px; border-radius:8px; min-width:300px;">
+    <h3 style="margin-bottom:12px;">Save zone</h3>
+    <input type="text" id="export-name" placeholder="Enter saved zone name" style="width:100%; margin-bottom:6px;">
+    <div class="field-hint" id="export-hint"></div>
+    <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end;">
+      <button onclick="document.getElementById('export-modal').style.display='none'">Cancel</button>
+      <button class="primary" onclick="saveConfig()">Save</button>
+    </div>
+  </div>
+</div>
+
+
+
+<audio id="beep" src="soundeffects/check.mp3"></audio>
+
+
+<script>
+
+const CONFIG_URL = 'http://localhost:5002/reader_config'
+const FIELD_URL = 'http://localhost:5002/field'
+const POSITIONS_URL = 'http://localhost:5002/positions'
+const STILLNESS_TIME = 4000
+const STILLNESS_THRESHOLD = 320
+let stillnessStart=null
+let fieldShape = null
+let calibrationTag = null
+let pollTimer = null
+let maxBufferLength = 1
+let currentStepIndex = 0
+let isCapturing = false
+let windowSize = 1
+let validArea = {}
+let fieldConfig = {}
+const VALIDAREA_OFFSET = 200
+let stepsToCapture = null
+let capturedPoints = {}
+let buffer = []
+let isFinished = false
+let recordedPoint = null
+let tagsList = {}
+let calibration_tag = null
+let configFile = null
+let maxCharacterLength = null
+
+
+const selectTag = document.getElementById('cali-tag')
+const selectShape = document.getElementById('shape-select')
+const previewCanvas = document.getElementById('preview-canvas')
+const previewCtx = previewCanvas.getContext('2d')
+
+let minX = 0
+let maxX = 0
+let minY = 0
+let maxY = 0
+let mapScaleX = 1
+let mapScaleY = 1
+let mapOffX = 0
+let mapOffY = 0
+
+
+
+selectShape.addEventListener('change', () => {
+  if (selectShape.value === "circular"){ document.getElementById('hidden-feature').style.display = 'none' }
+  if (selectShape.value === "polygon") { document.getElementById('hidden-feature').style.display = 'block'}
+})
+
+async function init(){
+    previewCanvas.style.display = 'none'
+    previewCtx.clearRect(0,0,previewCanvas.width, previewCanvas.height)
+    try{
+        const result = await fetch(CONFIG_URL)
+        configFile = await result.json()
+    } catch (err) {
+        const option = document.createElement("option")
+        option.value = "null"
+        option.textContent = "No tags available"
+        selectTag.appendChild(option)
+        console.log("Could not load tags")
+        return
+    }
+    maxCharacterLength = configFile.configuration.maxZoneFileNameSize
+    let combined = [
+      ...configFile.remotetags,
+      ...configFile.ball_id
+    ]
+    combined.sort((a,b)=> a.nickname.localeCompare(b.nickname))
+    // configFile.remotetags.forEach((tag) => {
+    //     const option = document.createElement("option")
+    //     option.value = tag.address
+    //     option.textContent = tag.nickname
+    //     selectTag.appendChild(option)
+    // })
+    combined.forEach((tag) => {
+        const option = document.createElement("option")
+        option.value = tag.address
+        option.textContent = tag.nickname
+        selectTag.appendChild(option)
+    })
+
+
+
+    
+
+}
+
+
+
+function startCalibration(){
+    if (selectTag.value === "No tags available") return
+    fieldShape = document.getElementById('shape-select').value
+    calibrationTag = document.getElementById('cali-tag').value
+    console.log(calibrationTag)
+    isFinished = false
+    const cornerCount = document.getElementById('corner-count').value
+    stepsToCapture = fieldShape === 'polygon'? parseInt(cornerCount) : 2
+    currentStepIndex = 0
+    fieldConfig = {}
+    capturedPoints = {}
+    buffer = []
+    recordedPoint = null
+    document.getElementById('captured-points').textContent = ""
+    startRecording()
+    
+}
+function startRecording(){
+  
+    if (currentStepIndex >= stepsToCapture) {
+        updateProgressBar(0)
+        finishCalibration()
+        return
+    }
+    buffer = []
+    isCapturing = false
+    recordedPoint = null
+    updateProgressBar(0)
+   
+    document.getElementById('capture-title').textContent = "Reading tag position..."
+    let instruction = null
+    if (fieldShape === "polygon") {
+        instruction = `Walk to corner ${currentStepIndex + 1}, then stand still.`
+    }
+    else {
+        instruction = currentStepIndex === 0 
+        ? "Walk to center of the field, then stand still"
+        : "Walk to any point on the edge of the field, then stand still"
+    }
+    document.getElementById('capture-instruction').textContent = instruction
+
+    
+    console.log("Recorded point before starting: ",recordedPoint)
+    if (!pollTimer) pollTimer = setInterval(pollPosition, 200)
+}
+
+async function pollPosition(){
+    if (isFinished) return
+    let positions = null
+    try{
+        
+        const result = await fetch(POSITIONS_URL)
+        positions = await result.json()
+    } catch (e) {
+        document.getElementById('status-text').textContent = "Cannot reach tag readings server."
+        return
+    }
+    const reading = positions[calibrationTag]
+    
+    
+    if (!reading){
+        finishCalibration()
+        return
+    }
+
+    
+    
+    buffer.push({x: reading.x, y: reading.y})
+    if (buffer.length > 16) {
+      buffer.shift()
+    }
+    const x = buffer.map(reading => reading.x)
+    const y = buffer.map(reading => reading.y)
+    recordedPoint = {
+      x: Math.round(sum(x)/x.length),
+      y: Math.round(sum(y)/y.length)
+    }
+
+    if (buffer.length < 16) return
+
+    if (isPersonStandingStill()){
+      console.log("standing still")
+      if (stillnessStart === null) stillnessStart = Date.now()
+      const heldDuration = Date.now() - stillnessStart
+      updateProgressBar(Math.min(heldDuration/STILLNESS_TIME,1))
+      if (heldDuration >= STILLNESS_TIME){
+        capturePoint()
+      }
+
+  } else {
+    stillnessStart = null
+    updateProgressBar(0)
+  } 
+
+}
+
+function updateProgressBar(progress_frac){
+  const percentage = Math.round(progress_frac*100)
+  document.getElementById("stillness-fill").style.width = percentage+'%'
+  document.getElementById("stillness-percent").textContent = percentage+'%'
+}
+function isPersonStandingStill(){
+    const x = buffer.map(reading => reading.x)
+    const y = buffer.map(reading => reading.y)
+    const difference_x = Math.max(...x) - Math.min(...x)
+    const difference_y = Math.max(...y) - Math.min(...y)
+    return difference_x < STILLNESS_THRESHOLD && difference_y < STILLNESS_THRESHOLD
+}
+
+function capturePoint(){
+    if (isCapturing) return
+    isCapturing = true
+    stillnessStart = null
+    console.log("Recorded point after capturing: ",recordedPoint)
+    document.getElementById('beep').play()
+    const div = document.createElement('div')
+    div.textContent = `Point ${currentStepIndex+1} =  x: ${Math.round(recordedPoint.x/10)}, y: ${Math.round(recordedPoint.y)}`
+    document.getElementById('captured-points').appendChild(div)
+
+    capturedPoints[currentStepIndex] = recordedPoint 
+
+    clearInterval(pollTimer)
+    pollTimer = null
+
+    currentStepIndex +=1
+    if (currentStepIndex >= stepsToCapture) {
+      updateProgressBar(0)
+      finishCalibration()
+      return
+    }
+    document.getElementById('capture-title').textContent = "Waiting to start..."
+    document.getElementById('status-text').textContent = ""
+    document.getElementById('capture-instruction').textContent = "Move to the next opposite corner / edge of the field"
+    setTimeout(startRecording,3000)
+    
+}
+function sum(values){
+  return values.reduce((total, n)=> total+n,0)
+}
+function median(values){
+    if (values.length === 0 ) return 0
+    const sorted = [...values].sort((a,b)=> a - b)
+    const midPoint = Math.floor(sorted.length/2)
+    return midPoint % 2 === 0? (sorted[midPoint -1] + sorted[midPoint]) / 2 : sorted [midPoint]
+}
+
+function exportModal(){
+  document.getElementById('export-name').value = ''
+  document.getElementById('export-hint').textContent = ''
+  document.getElementById('export-modal').style.display = 'block'
+}
+
+function finishCalibration(){
+    if (isFinished) return
+
+    isFinished = true
+    console.log("went to finish calibration fn")
+    clearInterval(pollTimer)
+    pollTimer = null
+    console.log(capturedPoints)
+    document.getElementById("saveconfig-btn").disabled = false
+    if (Object.keys(capturedPoints).length === 0) {
+      
+        document.getElementById('status-text').textContent = "Please ensure the calibration tag is on during the calibration process, then try again."
+        document.getElementById('capture-title').textContent = "Calibration failed"
+        document.getElementById('capture-instruction').textContent = ""
+        return
+    } 
+        document.getElementById('coordinates').textContent = ""
+        document.getElementById('status-text').textContent = "Calibration Done."
+        document.getElementById('capture-title').textContent = "All points recorded."
+        document.getElementById('capture-instruction').textContent = ""
+    
+    console.log("Updated fields")
+    if (fieldShape === "polygon"){
+        
+        const cornersArray = Object.values(capturedPoints)
+        const sortedCorners = sortCornersCCW(cornersArray)
+        fieldConfig = {
+          shape: "polygon",
+          corners: sortedCorners,
+          
+        }
+        console.log(`after sorting: ${sortedCorners}`)
+        
+    }
+        else {
+        const center = capturedPoints[0]
+        const edge = capturedPoints[1]
+        const circleRadius = Math.round(Math.hypot(edge.x - center.x, edge.y - center.y))
+        fieldConfig = {
+          shape: "circular",
+          radius: circleRadius,
+          center: {x: center.x, y: center.y} ,
+        
+        }
+        
+    }
+    document.getElementById("unit").textContent = "Points are measured in cm"
+    document.getElementById('final-summary').textContent = ""
+    previewCanvas.style.display = 'block'
+    drawPreview()
+
+
+    }
+
+function sortCornersCCW(corners){
+  const centroid_x = corners.reduce((sum,c) => sum + c.x,0)/ corners.length
+  const centroid_y = corners.reduce((sum,c) => sum + c.y,0)/ corners.length
+
+  return [...corners].sort((a,b)=> {
+    const angleA = Math.atan2(a.y - centroid_y, a.x - centroid_x)
+    const angleB = Math.atan2(b.y - centroid_y, b.x - centroid_x)
+    return angleA - angleB
+  })
+}
+
+
+
+
+async function saveConfig(){
+    const name = document.getElementById('export-name').value.trim()
+    if (!name) {
+        document.getElementById('export-hint').textContent = "Enter game name"
+        return
+    }
+    if (!/^[a-zA-Z0-9\s_]+$/.test(name)) {
+        document.getElementById('export-hint').textContent = 'Letters and numbers only'
+        return
+    }
+    if (name.length > maxCharacterLength) {
+        document.getElementById('export-hint').textContent = `Too long - keep it to ${maxCharacterLength} characters`
+        return
+    }
+
+
+    fieldConfig = buildFieldConfig()   // rebuild from current capturedPoints so edits persist
+
+
+    try{
+        const result = await fetch(`http://localhost:5002/zone/${name}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json'},
+          body: JSON.stringify(fieldConfig)
+        })
+        const response = await result.json()
+        if (response.status === "ok"){
+          document.getElementById('final-summary').textContent = "Configuration Saved!"
+          document.getElementById('export-modal').style.display = 'none'
+          return
+        }
+    } catch (err) {
+        document.getElementById('final-summary').textContent = "Server is down; unable to save configuration."
+    }
+    console.log(fieldConfig)
+}
+
+function restartCalibration(){
+  previewCanvas.style.display = 'none'
+  previewCtx.clearRect(0,0,previewCanvas.width, previewCanvas.height)
+
+  document.getElementById('final-summary').textContent = "No data yet."
+  document.getElementById('capture-title').textContent = "Waiting to start..."
+  document.getElementById('capture-instruction').textContent = ""
+  document.getElementById('status-text').textContent = ""
+  document.getElementById('shape-select').value = 'polygon'
+  document.getElementById('captured-points').textContent = ""
+  document.getElementById('cali-tag').selectedIndex = 0
+  document.getElementById('corner-editor').innerHTML = ''
+  valueDisplay.textContent = slider.value
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  isFinished = true
+  isCapturing = false
+
+
+
+
+}
+function buildFieldConfig(){
+  if (fieldShape === "polygon"){
+    const sortedCorners = sortCornersCCW(Object.values(capturedPoints))
+    return { shape: "polygon", corners: sortedCorners }
+  }
+  const center = capturedPoints[0]
+  const edge   = capturedPoints[1]
+  const radius = Math.round(Math.hypot(edge.x - center.x, edge.y - center.y))
+  return {
+    shape: "circular",
+    radius,
+    center: { x: center.x, y: center.y },
+    edge:   { x: edge.x,   y: edge.y }
+  }
+}
+
+
+
+function getBounds() {
+  if (fieldShape === "polygon") {
+    const corners = Object.values(capturedPoints)
+    const xs = corners.map(c => c.x)
+    const ys = corners.map(c => c.y)
+    return {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minY: Math.min(...ys),
+      maxY: Math.max(...ys)
+    }
+  }
+  if (fieldShape === "circular") {
+    const center = capturedPoints[0]
+    const edge   = capturedPoints[1]
+    const radius = Math.hypot(edge.x - center.x, edge.y - center.y)
+    return {
+      minX: center.x - radius,
+      maxX: center.x + radius,
+      minY: center.y - radius,
+      maxY: center.y + radius
+    }
+  }
+  return null
+}
+
+
+function fitPreviewCanvas() {
+  const dpr = window.devicePixelRatio || 1
+  const css = previewCanvas.clientWidth
+  previewCanvas.width  = css * dpr
+  previewCanvas.height = css * dpr
+  previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  computeTransform(css)
+}
+
+
+function computeTransform(cssSize) {
+  const bounds = getBounds()
+  if (!bounds) return
+
+
+  minX = bounds.minX
+  maxX = bounds.maxX
+  minY = bounds.minY
+  maxY = bounds.maxY
+
+
+  const margin = (cssSize / 12) * 2
+  const inner  = cssSize - 2 * margin
+
+
+  // uniform scale so circles stay round
+  const scale = Math.min(
+    inner / (maxX - minX),
+    inner / (maxY - minY)
+  )
+  mapScaleX = scale
+  mapScaleY = scale
+
+
+  const usedWidth  = (maxX - minX) * scale
+  const usedHeight = (maxY - minY) * scale
+  mapOffX = margin + (inner - usedWidth)  / 2
+  mapOffY = margin + (inner - usedHeight) / 2
+}
+
+
+// world (mm, y up) → canvas (px, y down)
+function toCanvas(x, y) {
+  return [
+    mapOffX + (x - minX) * mapScaleX,
+    mapOffY + (maxY - y) * mapScaleY,
+  ]
+}
+
+
+function drawGrid() {
+  const w = previewCanvas.clientWidth
+  previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height)
+  previewCtx.fillStyle = '#fafafa'
+  previewCtx.fillRect(0, 0, w, w)
+
+
+  previewCtx.strokeStyle = '#e8e8ea'
+  previewCtx.lineWidth = 1
+  const step = w / 12
+  for (let i = 1; i < 12; i++) {
+    previewCtx.beginPath()
+    previewCtx.moveTo(i * step, 0); previewCtx.lineTo(i * step, w)
+    previewCtx.moveTo(0, i * step); previewCtx.lineTo(w, i * step)
+    previewCtx.stroke()
+  }
+  previewCtx.strokeStyle = '#d0d0d0'
+  previewCtx.strokeRect(0.5, 0.5, w - 1, w - 1)
+}
+
+
+function drawPolygonPreview(corners) {
+  previewCtx.fillStyle   = 'rgba(40,167,69,0.05)'
+  previewCtx.strokeStyle = '#28a745'
+  previewCtx.lineWidth   = 1.5
+
+
+  previewCtx.beginPath()
+  const [startX, startY] = toCanvas(corners[0].x, corners[0].y)
+  previewCtx.moveTo(startX, startY)
+  for (let i = 1; i < corners.length; i++) {
+    const [px, py] = toCanvas(corners[i].x, corners[i].y)
+    previewCtx.lineTo(px, py)
+  }
+  previewCtx.closePath()
+  previewCtx.fill()
+  previewCtx.stroke()
+
+  for (let i = 0; i < corners.length; i++) {
+    const c = corners[i]
+    const [px, py] = toCanvas(c.x, c.y)
+    previewCtx.fillStyle = '#ff9500'
+    previewCtx.beginPath()
+    previewCtx.arc(px, py, 5, 0, Math.PI * 2)
+    previewCtx.fill()
+
+
+    
+    previewCtx.fillStyle = '#1d1d1f'
+    previewCtx.font = '12px ui-monospace, monospace'
+    previewCtx.fillText(`Point ${i + 1} (${Math.round(c.x/10)}, ${Math.round(c.y/10)})`, px -20  , py - 12)
+  }
+
+}
+
+
+function drawCircularPreview(center, radius) {
+  const [cx, cy]  = toCanvas(center.x, center.y)
+  const scaledRadius = radius * mapScaleX
+
+
+  previewCtx.fillStyle   = 'rgba(40,167,69,0.05)'
+  previewCtx.strokeStyle = '#28a745'
+  previewCtx.lineWidth   = 1.5
+
+
+  previewCtx.beginPath()
+  previewCtx.arc(cx, cy, scaledRadius, 0, Math.PI * 2)
+  previewCtx.fill()
+  previewCtx.stroke()
+
+
+
+  previewCtx.fillStyle = '#ff9500'
+  previewCtx.beginPath()
+  previewCtx.arc(cx, cy, 5, 0, Math.PI * 2)
+  previewCtx.fill()
+
+  previewCtx.fillStyle = '#1d1d1f' 
+  previewCtx.font = '13px ui-monospace, monospace' 
+  previewCtx.fillText(`Radius = ${Math.round(radius/10)}cm`, cx + 8, cy - 6) 
+  previewCtx.fillText(`Center = (${Math.round(center.x/10)},${Math.round(center.y/10)})cm`, cx + 8, cy - 22) 
+}
+
+
+function drawPreview() {
+  fitPreviewCanvas()
+  drawGrid()
+
+
+  if (fieldShape === "polygon") {
+    const sortedCorners = sortCornersCCW(Object.values(capturedPoints))
+    drawPolygonPreview(sortedCorners)
+  }
+
+
+  if (fieldShape === "circular") {
+    const center = capturedPoints[0]
+    const edge   = capturedPoints[1]
+    const radius = Math.hypot(edge.x - center.x, edge.y - center.y)
+    drawCircularPreview(center, radius)
+  }
+
+
+  const container = document.getElementById('corner-editor')
+  container.innerHTML = ''
+
+
+  if (fieldShape === "circular") {
+    const center = capturedPoints[0]
+    const edge   = capturedPoints[1]
+    const radius = Math.round(Math.hypot(edge.x - center.x, edge.y - center.y))
+
+    const radiusRow = document.createElement('div')
+    radiusRow.className = 'row'
+    const radiusLabel = document.createElement('span')
+    radiusLabel.className = 'label'
+    radiusLabel.textContent = 'Radius (cm)'
+    const radiusInput = document.createElement('input')
+    radiusInput.type = 'number'
+    radiusInput.value = Math.round(radius/10)
+    radiusInput.style.width = '100px'
+    radiusInput.addEventListener('change', () => {
+      const rCm = parseFloat(radiusInput.value)
+      if (isNaN(rCm) || rCm <= 0) return
+      const rMm = rCm * 10
+      capturedPoints[1] = { x: center.x + rMm, y: center.y }  // rewrite edge point
+      drawPreview()
+    })
+    radiusRow.appendChild(radiusLabel)
+    radiusRow.appendChild(radiusInput)
+    container.appendChild(radiusRow)
+    return
+  }
+
+
+  // polygon: per-corner x/y editor
+  Object.keys(capturedPoints).forEach(i => {
+    const pt = capturedPoints[i]
+    const label = `Corner ${Number(i) + 1}`
+
+
+    const row = document.createElement('div')
+    row.className = 'row'
+
+
+    const span = document.createElement('span')
+    span.className = 'label'
+    span.textContent = label
+
+
+    const inputX = document.createElement('input')
+    inputX.type = 'number'
+    inputX.value = pt.x
+    inputX.style.width = '100px'
+
+
+    const inputY = document.createElement('input')
+    inputY.type = 'number'
+    inputY.value = pt.y
+    inputY.style.width = '100px'
+
+
+    inputX.addEventListener('change', () => {
+      const v = parseFloat(inputX.value)
+      if (!isNaN(v)) { capturedPoints[i].x = v; drawPreview() }
+    })
+    inputY.addEventListener('change', () => {
+      const v = parseFloat(inputY.value)
+      if (!isNaN(v)) { capturedPoints[i].y = v; drawPreview() }
+    })
+
+
+    row.appendChild(span)
+    row.appendChild(document.createTextNode('x:'))
+    row.appendChild(inputX)
+    row.appendChild(document.createTextNode('y:'))
+    row.appendChild(inputY)
+    container.appendChild(row)
+  })
+}
+
+init()
+    
+
+</script>
+</body>
+</html>
+
+

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YouRule - Setup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #ffffff; color: #1d1d1f;
+    padding: 20px; max-width: 700px; margin: 0 auto;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+
+
+  .status-bar {
+    display: flex; align-items: center; gap: 12px;
+    background: #f5f5f7; border: 1px solid #e0e0e0;
+    border-radius: 8px; padding: 12px 16px; margin-bottom: 24px;
+    font-size: 13px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #28a745;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+
+
+  .section-title {
+    font-size: 13px; font-weight: 600; color: #666;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+
+  .anchor-table {
+    background: #fff; border: 1px solid #e0e0e0;
+    border-radius: 8px; overflow: hidden; margin-bottom: 16px;
+  }
+  .anchor-head {
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 40px;
+    padding: 10px 14px; background: #f5f5f7;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 12px; font-weight: 600; color: #666;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .anchor-row {
+    display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 40px;
+    align-items: center; padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0; gap: 8px;
+  }
+  .anchor-row:last-child { border-bottom: none; }
+
+
+  .anchor-row input {
+    width: 100%; padding: 6px 8px; font-size: 13px;
+    border: 1px solid #d0d0d0; border-radius: 5px;
+    background: #fff; font-family: ui-monospace, monospace;
+  }
+  .anchor-row input:focus { outline: none; border-color: #0071e3; }
+  .address-label {
+    font-family: ui-monospace, monospace; font-size: 13px; color: #1d1d1f;
+  }
+
+
+  .icon-btn {
+    background: none; border: none; cursor: pointer;
+    color: #888; font-size: 16px; padding: 4px;
+    border-radius: 5px;
+  }
+  .icon-btn:hover { background: #ffe5e5; color: #d33; }
+
+
+  button {
+    padding: 8px 16px; border: 1px solid #d0d0d0;
+    background: #f5f5f7; border-radius: 6px;
+    font-size: 13px; cursor: pointer; color: #1d1d1f;
+  }
+  button:hover:not(:disabled) { background: #e8e8ea; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .primary { background: #0071e3; color: white; border-color: #0071e3; }
+  .primary:hover:not(:disabled) { background: #005bb5; }
+  .success { background: #28a745; color: white; border-color: #28a745; }
+  .success:hover:not(:disabled) { background: #218838; }
+
+
+  .actions {
+    display: flex; gap: 10px; align-items: center; margin-top: 8px;
+  }
+  .hint { font-size: 12px; color: #888; }
+  #status { font-size: 13px; color: #0071e3; margin-top: 12px; min-height: 18px; }
+
+
+  .new-anchor-row input[placeholder="0x____"] {
+    font-family: ui-monospace, monospace;
+  }
+</style>
+</head>
+<body>
+
+
+<h1>System Setup</h1>
+<p class="subtitle">Review your anchor configuration before starting. Press Continue when ready.</p>
+
+<div class="section-title">Anchor Configuration</div>
+<div class="anchor-table">
+  <div class="anchor-head">
+    <span>Address</span>
+    <span>X (cm)</span>
+    <span>Y (cm)</span>
+    <span></span>
+  </div>
+  <div id="anchor-list"></div>
+</div>
+
+
+<div class="actions">
+  <button onclick="addAnchorRow()">+ Add Anchor</button>
+  <button id="save-btn" class="primary" onclick="saveAnchors()" disabled>Save Changes</button>
+  <button id="continue-btn" class="success" onclick="proceed()">Continue</button>
+</div>
+<div id="status"></div>
+
+
+<div id="restart-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75);
+  z-index:99999; flex-direction:column; align-items:center; justify-content:center;
+  color:white; font-family:-apple-system,sans-serif; gap:12px;">
+  <div style="font-size:20px; font-weight:600;">Saving configuration...</div>
+  <div style="width:40px; height:40px; border:3px solid #444; border-top-color:white;
+    border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+  <style>@keyframes spin { to { transform:rotate(360deg); } }</style>
+</div>
+
+<div id="toast" style="
+  position: fixed; top: 20px; right: 20px;
+  background: #1d1d1f; color: white;
+  padding: 14px 20px; border-radius: 8px;
+  font-size: 14px; font-family: -apple-system, sans-serif;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 99999;
+  opacity: 0; transform: translateX(400px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+"></div>
+
+<script>
+const CONFIG_URL = 'http://localhost:5002/reader_config'
+const POSITIONS_URL = 'http://localhost:5002/positions'
+let configData = null
+let hasChanges = false
+
+
+async function init() {
+  // load config
+  try {
+    const result = await fetch(CONFIG_URL)
+    configData = await result.json()
+  } catch (err) {
+    document.getElementById('status').textContent = "Cannot reach server. Please make sure it is on."
+    return
+  }
+
+
+  renderAnchors()
+
+}
+
+
+function renderAnchors() {
+  const list = document.getElementById('anchor-list')
+  list.innerHTML = ''
+  configData.anchors.forEach((anchor, i) => {
+    list.appendChild(makeAnchorRow(
+      anchor.address,
+      Math.round(parseFloat(anchor.x) / 10),   
+      Math.round(parseFloat(anchor.y) / 10),
+      false  
+    ))
+  })
+}
+
+
+function makeAnchorRow(address, x, y, isNew) {
+  const row = document.createElement('div')
+  row.className = 'anchor-row'
+
+
+  const addrCell = isNew
+    ? `<input type="text" placeholder="0x____" value="${address}" oninput="markChanged()">`
+    : `<span class="address-label">${address}</span>`
+
+
+  row.innerHTML = `
+    ${addrCell}
+    <input type="number" value="${x}" oninput="markChanged()">
+    <input type="number" value="${y}" oninput="markChanged()">
+    <button class="icon-btn" onclick="removeRow(this)" title="Remove">✕</button>
+  `
+  return row
+}
+
+
+function addAnchorRow() {
+  const list = document.getElementById('anchor-list')
+  list.appendChild(makeAnchorRow('', 0, 0, true))
+  markChanged()
+}
+
+
+function removeRow(btn) {
+  btn.closest('.anchor-row').remove()
+  markChanged()
+}
+
+
+function markChanged() {
+  hasChanges = true
+  document.getElementById('save-btn').disabled = false
+  document.getElementById('continue-btn').disabled = true
+}
+function showToast(message, type) {
+  const toast = document.getElementById('toast')
+  toast.textContent = message
+
+  const colors = {
+    success: '#28a745',
+    error:   '#dc3545'
+  }
+  toast.style.background = colors[type] || colors.info
+
+  toast.style.opacity = '1'
+  toast.style.transform = 'translateX(0)'
+
+  clearTimeout(toast._timer)
+  toast._timer = setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateX(400px)'
+  }, 3000)
+}
+
+
+
+async function saveAnchors() {
+  const rows = document.querySelectorAll('#anchor-list .anchor-row')
+  const anchors = []
+
+
+  for (const row of rows) {
+    const label = row.querySelector('.address-label')
+    const numberInputs = row.querySelectorAll('input[type=number]')
+
+
+    let address
+    if (label) {
+      // existing anchor — address is a static label
+      address = label.textContent.trim()
+    } else {
+      // new anchor — address is the first text input
+      const addrInput = row.querySelector('input[type=text]')
+      address = addrInput ? addrInput.value.trim() : ''
+    }
+
+
+    const x = parseFloat(numberInputs[0].value) * 10   // cm → mm
+    const y = parseFloat(numberInputs[1].value) * 10
+    const z = 100
+
+
+    if (!address) {
+      document.getElementById('status').textContent = "All anchors must have an address."
+      return
+    }
+    if (isNaN(x) || isNaN(y)) {
+      document.getElementById('status').textContent = "All coordinate fields must be filled."
+      return
+    }
+
+
+    anchors.push({ address: address, x: x, y: y, z: z })
+  }
+
+
+  if (anchors.length < 4) {
+    document.getElementById('status').textContent = "At least 4 anchors are required."
+    return
+  }
+
+
+  configData.anchors = anchors
+
+
+  const result = await fetch(CONFIG_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(configData)
+  })
+
+
+  if (result.ok) {
+    showRestartOverlay(() => {
+      showToast("Saved configuration successfully!", "success")
+      hasChanges=false
+      document.getElementById('save-btn').disabled = true
+      document.getElementById('continue-btn').disabled = false
+    })
+
+  } else {
+    showToast("Failed to save configuration", "error")
+  }
+}
+
+
+
+
+
+function showRestartOverlay(onDone = null) {
+  const overlay = document.getElementById('restart-overlay')
+  overlay.style.display = 'flex'
+
+  setTimeout(() => {
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch('http://localhost:5002/positions')
+        if (res.ok) {
+          clearInterval(poll)
+          overlay.style.display = 'none'
+          if (onDone) onDone()
+        }
+      } catch (e) {
+        // server still restarting, keep polling
+      }
+    }, 1500)
+  }, 2000)
+}
+
+
+
+
+
+function proceed() {
+  if (hasChanges) {
+    alert("You have unsaved changes. Please save before continuing.")
+    return
+  }
+  window.location.href = 'final_blockly_screen.html'
+}
+
+
+
+
+
+init()
+</script>
+</body>
+</html>
+
+

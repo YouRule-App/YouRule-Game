@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YouRule - Rule Editor</title>
+<script src="dependencies/blockly.min.js"></script>
+<!-- offline version:
+(This setup requires internet only once. After initial installation, no internet is required further on)
+1. Download the js file for blockly by navigating to :https://unpkg.com/blockly, then choose the file blockly.min.js and download it.
+2. Place it inside C:\Users\Admin\Documents\YouRule - Mohamed Walid\dependencies
+3. An easier way to have this file if you run into issues in the first step is to go to the same link, click on the file, then click "view raw" 
+and copy the entire text. Open a notepad and paste that text, and make sure you save it as "blockly.min.js" file. Save it in the same path specified
+in step 2.
+-->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f5f5f7;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: #fff;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header p { font-size: 12px; color: #888; margin-top: 2px; }
+  #blocklyDiv {
+    flex: 1;
+    width: 100%;
+  }
+    button {
+    
+    padding: 8px 16px;
+    border: 1px solid #d0d0d0;
+    background: #f5f5f7;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #1d1d1f;
+  }
+  #import-btn { padding: 8px 16px;background: #98c2c4; border-color: #28a745; }
+  #export-btn { padding: 8px 16px; background: #81ca84; border-color: #28a745; }
+  #clear-btn { padding: 8px 16px;background: #ce6f55;   border-color: #e44040; }
+  #gonext { padding: 8px 16px;background: #c4ab98; border-color: #bc9968; }
+  #anchors {font-size: 13px;}
+  .primary { background: #0071e3; color: white; border-color: #0071e3; }
+.primary:hover:not(:disabled) { background: #005bb5; }
+
+
+#export-modal input[type=text],
+#import-modal input[type=text] {
+  padding: 8px 14px;
+  border: 1px solid #d0d0d0;
+  background: #f5f5f7;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #1d1d1f;
+}
+
+
+.field-hint {
+  font-size: 11px;
+  min-height: 13px;
+  margin-top: 2px;
+  color: #d33;
+}
+
+
+
+
+
+  
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+  <h1>Rule Editor</h1>
+  <p>Drag blocks from the toolbox on the left, then begin setting up your game.</p>
+  </div>
+  <div style="display: flex; justify-content:space-between; gap: 40px; padding: 8px 0px;">
+    <div>
+  <button id='import-btn' onclick="importGame()">Load Game</button>
+  <button id='export-btn' onclick="exportModal()">Save Game</button>
+  <button id='gonext' onclick="navigate('gamepage_ruling.html')">Run</button>
+  <button id='clear-btn' onclick="clearWorkspace()">Clear all</button>
+  </div>
+  <span id="anchors">
+    Changed your anchor setup? <a id="anchors" href="#" onclick="navigate('anchor_setup.html'); return false;">Click here.</a>
+    </span>
+  </div>
+</header>
+
+<div id="blocklyDiv"></div>
+<div id="import-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999;">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:24px; border-radius:8px; min-width:320px; max-width:400px;">
+    <h3 style="margin-bottom:12px;">Import game</h3>
+    <input type="text" id="import-search" placeholder="Search games…" oninput="filterGames(this.value)" style="width:100%; margin-bottom:12px;">
+    <div id="import-list" style="max-height:240px; overflow-y:auto;"></div>
+    <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+      <button onclick="document.getElementById('import-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+<div id="export-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999;">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:24px; border-radius:8px; min-width:300px;">
+    <h3 style="margin-bottom:12px;">Save game</h3>
+    <input type="text" id="export-name" placeholder="Enter saved file name" style="width:100%; margin-bottom:6px;">
+    <div class="field-hint" id="export-hint"></div>
+    <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end;">
+      <button onclick="document.getElementById('export-modal').style.display='none'">Cancel</button>
+      <button class="primary" onclick="exportGame()">Save</button>
+    </div>
+  </div>
+</div>
+<div id="toast" style="
+  position: fixed; top: 20px; right: 20px;
+  background: #1d1d1f; color: white;
+  padding: 14px 20px; border-radius: 8px;
+  font-size: 14px; font-family: -apple-system, sans-serif;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 99999;
+  opacity: 0; transform: translateX(400px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+"></div>
+
+<xml id="toolbox" style="display: none;">
+  <category name="Players" colour="#A65C81">
+    <block type="team"></block>
+    <block type="player"></block>
+  </category>
+  <category name="Equipment" colour="479DAD">
+    <block type="ball"></block>
+    <block type="zone"></block>
+  </category>
+  <category name="Ruling" colour="A88047">
+    <block type="sequence"></block>
+    <block type="rule"></block>
+  </category>
+  <category name="Events & Actions" colour="#2E31B0">
+    <block type="condition_contact"></block>
+    <block type="condition_throwsball"></block>
+    <block type="condition_insidefield"></block>
+    <block type="condition_outsidefield"></block>
+    <block type="timer"></block>
+    <block type="points"></block>
+    <block type="endgame"></block>
+    <block type="nothing"></block>
+  </category>
+  <category name="Sounds" colour="#869E89">
+    <block type="sound"></block>
+  </category>
+    
+</xml>
+
+<script>
+
+
+let playerOptions = []
+let zoneOptions = []
+let ballOptions = []
+let audioOptions = []
+let maxCharacterLength = null;
+let isSaved = false
+let isRestoring = false
+let allGames = []
+let loadedGameName = null
+const GAME_URL = 'http://localhost:5002/games'
+let teamList = []
+
+Blockly.Blocks['endgame']={
+  init: function() {
+    this.appendDummyInput()
+        .appendField("End game")
+    this.setPreviousStatement("true",'endgame')
+    this.setColour("5212B5")
+
+  }
+}
+Blockly.Blocks['team'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Team")
+        .appendField(new Blockly.FieldTextInput("Alpha",validateString),"team_name")
+    
+    this.appendDummyInput()
+    this.appendStatementInput("players_list")
+        .appendField("Members:")
+        .setCheck("player")
+    this.setColour("8A3F62");
+    this.setPreviousStatement(true, "team")
+    this.setTooltip("Forms a team of players dragged inside members field");
+
+
+  }
+}
+Blockly.Blocks['player'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Player")
+        .appendField(new Blockly.FieldDropdown(()=>playerOptions, 
+        function(value) {
+          if (isRestoring) return value
+          if (value === "AddNew"){
+            isSaved=true
+            navigate('add_tag.html')
+            return null
+          }
+          return value
+        }), "playerChoice")
+        .appendField(new Blockly.FieldImage("./media/gear.svg",16,16,"settings",
+        function() {
+          isSaved=true
+            navigate('settings.html#tags')
+          }
+        ))
+
+
+    this.setPreviousStatement(true, "player")
+    this.setNextStatement(true,"player")
+    
+
+    this.setColour("#A65C81");
+    this.setTooltip("A player identified by their tag ID");
+  }
+}
+Blockly.Blocks["zone"]={
+  init: function(){
+    this.appendDummyInput()
+        .appendField("Zone")
+        .appendField(new Blockly.FieldDropdown(()=> zoneOptions, 
+        function(value) {
+          if (isRestoring) return value
+          if (value === "AddNew"){
+            isSaved=true
+            navigate('add_zone.html')
+            return null
+          }
+          return value
+        }),"zoneChoice")
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldImage(
+          "./media/gear.svg",
+          16,16,
+          "settings",
+          function() {
+            isSaved = true
+            navigate('settings.html#zones')
+          }
+        ))
+    this.setInputsInline(true)
+    this.setPreviousStatement(true,"zone")
+    this.setColour("479DAD")
+    this.setTooltip("Allows you to choose one of your saved zones to plug inside event blocks, or to create a new zone");
+  }
+}
+
+
+Blockly.Blocks["ball"]={
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Ball")
+        .appendField(new Blockly.FieldDropdown(()=> ballOptions, 
+        function(value) {
+          if (isRestoring) return value
+          if (value === "AddNew"){
+            isSaved = true
+            navigate('add_tag.html')
+            return null
+          }
+          return value
+        }),"ball_id")
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldImage(
+          "./media/gear.svg",
+          16,16,
+          "settings",
+          function() {
+            isSaved = true
+            navigate('settings.html#tags')
+          }
+        ))
+    this.setInputsInline(true)
+    this.setPreviousStatement(true,"ball")
+    this.setColour("479DAD")
+        this.setTooltip("Ball identified by its attached tag");
+
+  }
+};
+
+
+Blockly.Blocks["rule"]={
+  init: function(){
+    this.appendDummyInput()
+        .appendField("Rule: ")
+        .appendField(new Blockly.FieldTextInput(""), "rule_name")
+    
+    
+    this.appendDummyInput()
+        .appendField("Enable Rule?")
+        .appendField(new Blockly.FieldDropdown([
+          ["Yes","yes"],
+          ["No","no"]
+        ]),"enable")
+    
+
+    this.appendDummyInput()
+    this.appendStatementInput("event")
+        .appendField("Event: ")
+        .setCheck("condition")
+    
+    this.appendDummyInput()
+    this.appendDummyInput("logic_operator")
+        .appendField("If")
+        .appendField(new Blockly.FieldDropdown([
+          ["ALL", "and"],
+          ["ANY", "or"],
+          ["NONE","not"]
+        ]),"operator")
+        .appendField("of the events are true")
+    
+    this.appendDummyInput()
+    this.appendStatementInput("action")
+        .appendField("Do this: ")
+        .setCheck(["points","nothing","endgame"])
+    
+    this.appendValueInput("sound")
+        .appendField("Play audio: ")
+        .setCheck("sound")
+
+    
+    this.setColour("A88047")
+    this.setNextStatement(true, "rule")
+    this.setPreviousStatement(true,"rule")
+    this.setTooltip("Allows you to stack condition blocks (the blue blocks) to form a rule, where if the conditions are met, an action happen (the purple blocks)");
+  
+    
+  }
+}
+Blockly.Blocks["sequence"]={
+  init: function(){
+    this.appendDummyInput()
+        .appendField("Sequence Block: ")
+        .appendField(new Blockly.FieldTextInput(""),"sequence_block_name")
+        
+    this.appendDummyInput()
+    this.appendStatementInput("rule")
+        .appendField("Rules:")
+        .setCheck("rule")
+        
+    this.appendDummyInput()
+    this.appendValueInput("sound")
+        .appendField("Penalty Sound:")
+        .setCheck("sound")
+    
+    this.setColour("C49654")
+    this.setNextStatement(true, "sequence")
+    this.setPreviousStatement(true,"sequence")
+    this.setTooltip("Allows you to stack multiple rules, where they are checked in order");
+    
+  }
+}
+Blockly.Blocks["sound"]={
+  init: function() {
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown(() => audioOptions, 
+        function(value){
+          if (isRestoring) return value
+          if (value === "AddNew"){
+            isSaved=true
+            navigate("add_audio.html")
+            return null
+          }
+          return value
+        }), "soundChoice")
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldImage(
+          "./media/gear.svg",
+          16,16,
+          "settings",
+          function() {
+            isSaved=true
+            navigate('settings.html#sounds')
+          }
+        ))
+    this.setInputsInline(true)
+    this.setOutput(true, "sound")
+    this.setColour("869E89")
+    this.setTooltip("Allows you to choose one of your saved audio clips to be played");
+  }
+}
+
+
+Blockly.Blocks["timer"]={
+  init: function(){
+    this.appendDummyInput()
+        .appendField(new Blockly.FieldDropdown([
+          ["After","once"],
+          ["Every","repeat"]
+        ]),"timingOption")
+        .appendField(new Blockly.FieldTextInput("1"),"duration")
+        .appendField("minute(s) since game start")
+
+    this.appendDummyInput()
+    this.appendStatementInput("action")
+        .appendField("Do this:")
+        .setCheck(["points","nothing","endgame"])
+    
+    this.appendValueInput("sound")
+        .appendField("Play audio:")
+        .setCheck("sound")
+    this.setColour("#2E31B0")
+    this.setTooltip("Does an action if a certain number of minutes have passed since game start");
+  }
+}
+Blockly.Blocks["points"]={
+    init: function(){
+        this.appendDummyInput()
+            .appendField(new Blockly.FieldDropdown([
+                ["Award","positive"],
+                ["Deduct","negative"]
+            ]), "sign")
+            .appendField(new Blockly.FieldTextInput("1"), "points")
+            .appendField("point(s)")
+            
+        this.appendDummyInput();
+        this.appendStatementInput("awardedplayer")
+            .appendField("to: ")
+            .setCheck(["player","team"])
+        this.setInputsInline(true);
+        this.setPreviousStatement(true,"points")
+        this.setNextStatement(true,"points")
+        this.setColour("5212B5")
+        this.setTooltip("Allows you to award or deduct points from players or teams. It expects a player or team block");
+    }
+}
+Blockly.Blocks["nothing"]={
+  init: function(){
+    this.appendDummyInput()
+        .appendField("Do nothing")
+    this.setPreviousStatement(true,"nothing")
+    this.setColour("5212B5")
+        this.setTooltip("Translates to no action will happen when a rule or event becomes true");
+  }
+}
+
+Blockly.Blocks["condition_throwsball"]={
+    init: function(){
+        this.appendStatementInput("passer")
+            .appendField("when: ")
+            .setCheck(["player","team"])
+        this.appendStatementInput("ball")
+            .appendField("throws or kicks:")
+            .setCheck("ball")
+        
+        this.appendStatementInput("receiver")
+            .appendField("to: ")
+            .setCheck(["team","player","zone"])
+        
+        this.setInputsInline(true)
+        this.setPreviousStatement(true,"condition")
+        this.setNextStatement(true,"condition")
+        this.setColour("#2E31B0")
+        this.setTooltip("A condition block that checks if a player or team threw or kicked a ball to a player or a zone")
+    }
+}
+Blockly.Blocks["condition_contact"]={
+    init: function(){
+        this.appendStatementInput("passer")
+            .appendField("when: ")
+            .setCheck(["player","team"])
+        this.appendStatementInput("receiver")
+            .appendField("is in contact with: ")
+            .setCheck(["player","team"])
+        
+        this.setInputsInline(true)
+        this.setPreviousStatement(true,"condition")
+        this.setNextStatement(true,"condition")
+        this.setColour("#2E31B0")
+        this.setTooltip("A condition block that checks if a player or team is in contact with another player or team")
+    }
+}
+Blockly.Blocks["condition_insidefield"]={
+    init: function(){
+        this.appendStatementInput("player")
+            .appendField("when: ")
+            .setCheck(["player","team","ball"])
+        this.appendStatementInput("zone")
+            .appendField("enters: ")
+            .setCheck("zone")
+        
+        this.setInputsInline(true)
+        this.setPreviousStatement(true,"condition")
+        this.setNextStatement(true,"condition")
+        this.setColour("#2E31B0")
+        this.setTooltip("A condition block that checks if a player or team or ball is inside a certain zone")
+    }
+}
+Blockly.Blocks["condition_outsidefield"]={
+    init: function(){
+        this.appendStatementInput("player")
+            .appendField("when: ")
+            .setCheck(["player","team","ball"])
+        this.appendStatementInput("zone")
+            .appendField("exits:")
+            .setCheck("zone")
+        
+        this.setInputsInline(true)
+        this.setPreviousStatement(true,"condition")
+        this.setNextStatement(true,"condition")
+        this.setColour("#2E31B0")
+        this.setTooltip("A condition block that checks if a player or team or a ball is outside a certain zone")
+    }
+}
+let workspace  = null
+let teams = new Map()
+let otherPlayers = new Set()
+let zones = new Set()
+let ballList = new Set()
+
+async function init(){
+  await loadVariables()
+  workspace = Blockly.inject('blocklyDiv', {
+    toolbox: document.getElementById('toolbox'), // Has all the blocks created inside "Game Pieces" drawer
+    media: './media/', // The folder containing necessary media for the blockly editor (e.g. trashcan icon png)
+    fontStyle: {
+      family: 'sans-serif',
+      weight: 'normal',
+      size: 13
+    },
+    trashcan: true,  // Enable the option to delete blocks from the editor
+    grid: { 
+      spacing: 20,
+      length: 3,
+      colour: '#ccc',
+      snap: true
+    },
+    zoom: {
+      controls: true,
+      wheel: true,
+      startScale: 1.0
+    }
+  });
+  restoreSession()
+  workspace.addChangeListener(()=> {
+    saveSession()
+    isSaved = false
+  })
+ 
+}
+
+async function importGame(){
+  document.getElementById('import-search').value = ''
+  document.getElementById('import-modal').style.display= 'block'
+  allGames = await(await fetch(GAME_URL)).json()
+  renderGameList(allGames)
+}
+function renderGameList(allGames){
+  const list = document.getElementById('import-list')
+  if (allGames.length === 0){
+    list.innerHTML = '<div style="padding:16px; text-align:center; color:#999; font-size:13px;">No games found.</div>'
+    return
+  }
+list.innerHTML = ''
+allGames.forEach(game => {
+  const item = document.createElement("div")
+  item.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:5px; font-size:13px;'
+
+
+  const nameSpan = document.createElement("span")
+  nameSpan.textContent = game
+  nameSpan.style.cssText = 'cursor:pointer; flex:1;'
+  nameSpan.onclick = () => loadGameFromServer(game)
+
+
+  const delBtn = document.createElement("button")
+  delBtn.textContent = '✕'
+  delBtn.style.cssText = 'border:none; background:none; color:#dc3545; cursor:pointer; font-size:14px; padding:0 6px;'
+  delBtn.onclick = (e) => {
+    e.stopPropagation()
+    deleteGame(game)
+  }
+
+
+  item.appendChild(nameSpan)
+  item.appendChild(delBtn)
+  list.append(item)
+})
+
+}
+async function deleteGame(game) {
+  if (!confirm(`Delete "${game}"? This can't be undone.`)) return
+  try {
+    const result = await fetch(`http://localhost:5002/game/${game}`, {
+      method: 'DELETE'
+    })
+    const response = await result.json()
+    if (response.status === "ok") {
+      importGame()
+    } 
+    else {
+      alert("Could not delete game file, try again.")
+    }
+  } catch (err) {
+    alert("Server unreachable. Please ensure it is on to delete game file.")
+  }
+}
+
+
+async function loadGameFromServer(name){
+
+  try {
+    const result = await fetch(`http://localhost:5002/game/${name}`)
+    console.log("status: ",result.status)
+    const gameFile = await result.json()
+    console.log("file: ",gameFile)
+    if (gameFile.error){ alert ("Could not load game file from server: "+name)}
+    loadedGameName = name
+    loadGameContent(gameFile.content)
+    document.getElementById('import-modal').style.display = 'none'
+  } catch (err) {
+     alert ("File not found: "+name)
+  }
+  
+}
+
+function filterGames(query){
+  const q = query.toLowerCase()
+  const filteredSearch = allGames.filter(game=> game.toLowerCase().includes(q))
+  renderGameList(filteredSearch)
+}
+
+
+function exportModal(){
+  const empty = findEmptyBlock()
+  if (empty) {return alert(`Please connect missing blocks in the workspace before saving.`)}
+  document.getElementById('export-name').value = loadedGameName? loadedGameName: ''
+  document.getElementById('export-hint').textContent = ''
+  document.getElementById('export-modal').style.display = 'block'
+}
+async function loadVariables(){
+  try{
+    const config = await fetch('http://localhost:5002/reader_config')
+    const configFile = await config.json()
+    const zones = await fetch('http://localhost:5002/zones')
+    const zonesFiles = await zones.json()
+    const audio = await fetch('http://localhost:5002/audios')
+    const audioFiles = await audio.json()
+    if (configFile.remotetags && configFile.remotetags.length){
+      playerOptions.push(...configFile.remotetags.map(t => [t.custom_name?t.custom_name:t.nickname,t.address]))
+      playerOptions.sort((a,b) => a[0].localeCompare(b[0]))
+      playerOptions.push(["Add a new player","AddNew"])
+      maxCharacterLength = configFile.configuration.maxNameSize
+      ballOptions.push(...configFile.ball_id.map(b => [b.custom_name?b.custom_name:b.nickname, b.address]))
+      ballOptions.sort((a,b) => a[0].localeCompare(b[0]))
+      ballOptions.push(["Add a new ball","AddNew"])
+      console.log(maxCharacterLength)
+      console.log(playerOptions)
+    }
+    if (zonesFiles.length){
+      zoneOptions.push(...zonesFiles.map(z => [z,z]))
+      zoneOptions.sort((a,b) => a[0].localeCompare(b[0]))
+      zoneOptions.push(["Add a new zone","AddNew"])
+      console.log(zoneOptions)
+    }
+    if (audioFiles.length){
+      audioOptions.push(...audioFiles.map(a => [a,a]))
+      audioOptions.sort((a,b) => a[0].localeCompare(b[0]))
+      audioOptions.push(["Add a new audio","AddNew"])
+    }
+  } catch (err) {
+    alert("Game options not found. Please enable the game server, then refresh your page.")
+    console.log(err)
+  }
+}
+function moveSecondElementToFront(arr){
+  if (arr.length < 2) return arr
+  const copied = [...arr]
+  const secondElement = copied.splice(1,1)[0]
+  copied.unshift(secondElement)
+  return copied
+}
+function validateString(text){
+  if (!/^[a-zA-Z0-9_]*$/.test(text)) return null
+  return text.slice(0,maxCharacterLength)
+}
+function saveTeams(name, address){
+  if (!teams.has(name)) teams.set(name, new Set())
+  teams.get(name).add(address)
+  teamList.push(name)
+}
+function savePlayers(address){
+  otherPlayers.add(address)
+}
+function saveZones(zone){
+  zones.add(zone)
+}
+function saveBalls(ball){
+  ballList.add(ball)
+}
+function findEmptyBlock(){ 
+  for (const block of workspace.getAllBlocks(false)){ 
+    for (const input of block.inputList){ 
+      if (input.connection && !input.connection.targetConnection){ 
+        block.select() 
+        return block.type 
+      } 
+    } 
+  } return null 
+} 
+
+
+
+async function exportGame(){ 
+  const jsonFile = workspaceToJson(); // 
+  const jsonText = JSON.stringify(jsonFile, null, 2);
+  const workspaceDom = Blockly.Xml.workspaceToDom(workspace);
+  const XmlText = Blockly.Xml.domToText(workspaceDom);
+  const fileContent = jsonText+'$$'+XmlText;
+  const name = document.getElementById('export-name').value.trim()
+  if (!/^[a-zA-Z0-9\s_]+$/.test(name)) { 
+    document.getElementById('export-hint').textContent = 'Letters and numbers only' 
+    return } 
+  const res = await fetch('http://localhost:5002/game', {
+    method : "POST",
+    headers : { "Content-Type":"application/json"},
+    body : JSON.stringify({game_name: name , content: fileContent})
+  })
+  const response = await res.json()
+  if (response.status === "ok"){
+    isSaved = true
+    document.getElementById('export-modal').style.display = 'none'
+    showToast("Saved game successfully!","success")
+  } else {
+    document.getElementById('export-hint').textContent = 'Failed to save' 
+  }
+  }
+  
+function workspaceToJson(){ // Convert the blocks to json file
+  const jsonFile = {
+    equipment: {zones: [], ballsList:[]},
+    players: {teams: [], otherPlayers:[]},
+    sequence_rules_list: [],
+    passive_rules_list: [],
+    timed_rules_list: []
+  };
+  const allBlocks = workspace.getAllBlocks(false);
+
+  const sequenced_rules = allBlocks.filter(b => b.type === 'sequence');
+  sequenced_rules.forEach(event_block => {
+    let result = []
+    let rule_blocks = event_block.getInputTargetBlock('rule');
+    while (rule_blocks){
+      result.push(parseRule(rule_blocks))
+      rule_blocks = rule_blocks.getNextBlock()
+    }
+    const penaltySoundBlock = event_block.getInputTargetBlock("sound")
+    jsonFile.sequence_rules_list.push({
+        sequence_block_name: event_block.getFieldValue("sequence_block_name"),
+        rule: result,
+        penaltySound: penaltySoundBlock ? penaltySoundBlock.getFieldValue("soundChoice") : null
+    })
+  
+
+    
+  });
+  const passive_rules = allBlocks.filter(b => b.type === 'rule' && (b.getParent() === "rule" || b.getParent() === null))
+  passive_rules.forEach(rule_block => {
+    jsonFile.passive_rules_list.push(parseRule(rule_block))
+  
+  
+      })
+  const time_blocks = allBlocks.filter(b=> b.type === "timer")
+  time_blocks.forEach(timer_blocks => {
+   
+      let timerList= {mode: null, duration: null, action:[], sound: null}
+      timerList.mode = timer_blocks.getFieldValue("timingOption")
+      timerList.duration = timer_blocks.getFieldValue("duration")
+      let action_block = timer_blocks.getInputTargetBlock("action")
+      while (action_block){
+      if (action_block.type === "nothing"){
+        timerList.action.push({type: "nothing"}) 
+        break
+      }
+      if (action_block.type === "endgame"){
+        timerList.action.push({type: "endgame"})
+        break
+      }
+      if (action_block.type === "points"){
+   
+       const givenpoints = parseInt(action_block.getFieldValue("points"))
+       const sign = action_block.getFieldValue("sign")
+       let beneficiaries = {team_name: null, players:[]}
+       let playersBlock = action_block.getInputTargetBlock("awardedplayer")
+       if (playersBlock.type === "team"){
+        beneficiaries.team_name = playersBlock.getFieldValue("team_name")
+        let playerList = playersBlock.getInputTargetBlock("players_list")
+        while (playerList){
+          beneficiaries.players.push(playerList.getFieldValue("playerChoice"))
+          saveTeams(playersBlock.getFieldValue("team_name"),playerList.getFieldValue("playerChoice"))
+          playerList = playerList.getNextBlock()
+        }
+
+       }
+       if (playersBlock.type === "player"){
+        let p = playersBlock
+        while (p) {
+        beneficiaries.players.push(p.getFieldValue("playerChoice"))
+        savePlayers(p .getFieldValue("playerChoice"))
+        p = p.getNextBlock()
+        }
+
+       }
+       timerList.action.push({
+        beneficiary: beneficiaries,
+        points: sign === "positive"? givenpoints:-givenpoints
+       })
+      }
+       action_block = action_block.getNextBlock()
+        }
+      const soundBlock = timer_blocks.getInputTargetBlock("sound")
+      timerList.sound = soundBlock.getFieldValue("soundChoice") 
+
+      jsonFile.timed_rules_list.push(timerList)
+      })
+    
+  
+  
+  teams.forEach((address, teamName) => {
+    jsonFile.players.teams.push({name: teamName, players: [...address]})
+  })
+  let filteredPlayers = new Set()
+  teams.forEach(address => address.forEach(a => filteredPlayers.add(a))) // each team has player addresses; adding tag to a set
+  otherPlayers.forEach(p => {
+    if (!filteredPlayers.has(p)) jsonFile.players.otherPlayers.push(p)
+  })
+  jsonFile.equipment.ballsList = [...ballList]
+  jsonFile.equipment.zones = [...zones]
+  return jsonFile;
+
+}
+function parseRule(rule_blocks){
+      let rule = { rule_name: null, enabled: null, conditions:[], action:[], sound:null, operator:null}
+      rule.rule_name = rule_blocks.getFieldValue("rule_name")
+      rule.enabled = rule_blocks.getFieldValue("enable")
+      let condition_blocks = rule_blocks.getInputTargetBlock('event')
+      while (condition_blocks){
+        switch(condition_blocks.type){
+            case "condition_throwsball":
+                const ballId = condition_blocks.getInputTargetBlock("ball")?.getFieldValue("ball_id")
+                let passer = condition_blocks.getInputTargetBlock("passer")
+                let p1 = {team_name: null, players: []}
+
+
+                  if (passer.type === "team"){
+                    const teamName = passer.getFieldValue("team_name")
+                    let plist = passer.getInputTargetBlock("players_list")
+                    p1.team_name = teamName
+                    while (plist){
+                      p1.players.push(plist.getFieldValue("playerChoice"));
+                      saveTeams(teamName,plist.getFieldValue("playerChoice"))
+                      plist = plist.getNextBlock();
+                    }
+                  }
+                  if (passer.type === "player"){
+                    let p = passer
+                    while (p){
+                      p1.players.push(p.getFieldValue("playerChoice"))
+                      savePlayers(p.getFieldValue("playerChoice"))
+                      p = p.getNextBlock()
+                    }
+                  }
+
+
+                let receiver = condition_blocks.getInputTargetBlock("receiver")
+                let p2 = {team_name: null, players:[], zone: null}
+
+
+                    if (receiver.type === "zone"){
+                      p2.zone = receiver.getFieldValue("zoneChoice")
+                      saveZones(p2.zone)
+                    }
+                    if (receiver.type === "team"){
+                      const teamName = receiver.getFieldValue("team_name")
+                      let plist = receiver.getInputTargetBlock("players_list")
+                      p2.team_name = teamName
+                      while (plist){
+                        p2.players.push(plist.getFieldValue("playerChoice"));
+                        saveTeams(teamName,plist.getFieldValue("playerChoice"))
+                        plist = plist.getNextBlock();
+                      }
+                    }
+                    if (receiver.type === "player"){
+                      let p = receiver
+                      while (p){
+                        p2.players.push(p.getFieldValue("playerChoice"))
+                        savePlayers(p.getFieldValue("playerChoice"))
+                        p = p.getNextBlock()
+                      }
+                    }
+                saveBalls(ballId)
+                rule.conditions.push({
+                  type: "player_throwsball",
+                  passer: p1,
+                  receiver: p2,
+                  ball: ballId
+                });
+                break;
+            case "condition_contact":
+
+
+                let contactingPlayer = condition_blocks.getInputTargetBlock("passer")
+                let contact = {team_name: null, players:[]}
+
+
+                  if (contactingPlayer.type === "team"){
+                    contact.team_name = contactingPlayer.getFieldValue("team_name")
+                    let plist_1 = contactingPlayer.getInputTargetBlock("players_list")
+                    while (plist_1){
+                      contact.players.push(plist_1.getFieldValue("playerChoice"))
+                      saveTeams(contactingPlayer.getFieldValue("team_name"),plist_1.getFieldValue("playerChoice"))
+                      plist_1 = plist_1.getNextBlock()
+                    }
+                  }
+                  if (contactingPlayer.type === "player"){
+                    let p = contactingPlayer
+                    while (p){
+                      contact.players.push(p.getFieldValue("playerChoice"))
+                      savePlayers(p.getFieldValue("playerChoice"))
+                      p = p.getNextBlock()
+                    }
+                  }
+                let affectedPlayer = condition_blocks.getInputTargetBlock("receiver")
+                let affected = {team_name: null, players:[]}
+                if (affectedPlayer.type === "team"){
+                  affected.team_name = affectedPlayer.getFieldValue("team_name")
+                  let plist_2 = affectedPlayer.getInputTargetBlock("players_list")
+                  while (plist_2){
+                    affected.players.push(plist_2.getFieldValue("playerChoice"))
+                    saveTeams(affectedPlayer.getFieldValue("team_name"),plist_2.getFieldValue("playerChoice"))
+                    plist_2 = plist_2.getNextBlock()
+                  }
+                }
+                  if (affectedPlayer.type === "player"){
+                    let p = affectedPlayer
+                    while (p){
+                      affected.players.push(p.getFieldValue("playerChoice"))
+                      savePlayers(p.getFieldValue("playerChoice"))
+                      p = p.getNextBlock()
+                    }
+                  }
+
+
+                rule.conditions.push({
+                  type: "player_contact",
+                  passer: contact,
+                  receiver: affected
+                })
+                break
+
+
+            case "condition_insidefield":
+                let player_insidefield = condition_blocks.getInputTargetBlock("player")
+                let playerList = {team_name: null, players:[], ball:null}
+                if (player_insidefield.type === "team"){
+                  playerList.team_name = player_insidefield.getFieldValue("team_name")
+                  let plist_3 = player_insidefield.getInputTargetBlock("players_list")
+                  while (plist_3){
+                    playerList.players.push(plist_3.getFieldValue("playerChoice"))
+                    saveTeams(player_insidefield.getFieldValue("team_name"),plist_3.getFieldValue("playerChoice"))
+                    plist_3 = plist_3.getNextBlock()
+                  }
+                }
+                if (player_insidefield.type === "player"){
+                  let p = player_insidefield
+                  while (p){
+                    playerList.players.push(p.getFieldValue("playerChoice"))
+                    savePlayers(p.getFieldValue("playerChoice"))
+                    p = p.getNextBlock()
+                  }
+                }
+                if (player_insidefield.type === "ball"){
+                  playerList.ball = player_insidefield.getFieldValue("ball_id")
+                }
+                saveZones(condition_blocks.getInputTargetBlock("zone")?.getFieldValue("zoneChoice"))
+                rule.conditions.push({
+                  type: "player_insidefield",
+                  player: playerList,
+                  zone: condition_blocks.getInputTargetBlock("zone")?.getFieldValue("zoneChoice")
+                })
+                break;
+            case "condition_outsidefield":
+                let player_outsidefield= condition_blocks.getInputTargetBlock("player")
+                let res = {team_name: null, players:[], ball:null}
+                if (player_outsidefield.type === "team"){
+                  res.team_name = player_outsidefield.getFieldValue("team_name")
+                  let plist_4 = player_outsidefield.getInputTargetBlock("players_list")
+                  while (plist_4){
+                    res.players.push(plist_4.getFieldValue("playerChoice"))
+                    saveTeams(player_outsidefield.getFieldValue("team_name"),plist_4.getFieldValue("playerChoice"))
+                    plist_4 = plist_4.getNextBlock()
+                  }
+                }
+                if (player_outsidefield.type === "player"){
+                  let p = player_outsidefield
+                  while (p){
+                    res.players.push(p.getFieldValue("playerChoice"))
+                    savePlayers(p.getFieldValue("playerChoice"))
+                    p = p.getNextBlock()
+                  }
+                }
+                if (player_outsidefield.type === "ball"){
+                  res.ball = player_outsidefield.getFieldValue("ball_id")
+                }
+                saveZones(condition_blocks.getInputTargetBlock("zone")?.getFieldValue("zoneChoice"))
+                rule.conditions.push({
+                  type: "player_outsidefield",
+                  player: res,
+                  zone: condition_blocks.getInputTargetBlock("zone").getFieldValue("zoneChoice")
+                })
+                break;                
+        }
+        condition_blocks = condition_blocks.getNextBlock()
+      }
+
+
+    let action_block = rule_blocks.getInputTargetBlock('action');
+    let givenpoints = 0
+    let sign = null
+    while (action_block){
+       if (action_block.type === "nothing"){
+        rule.action.push({type: "nothing"})
+        break
+       }
+       if (action_block.type === "endgame"){
+        rule.action.push({type: "endgame"})
+        break
+       }
+       givenpoints = parseInt(action_block.getFieldValue("points"))
+       sign = action_block.getFieldValue("sign")
+       let beneficiaries = {team_name: null, players:[]}
+       let playersBlock = action_block.getInputTargetBlock("awardedplayer")
+       if (playersBlock.type === "team"){
+        beneficiaries.team_name = playersBlock.getFieldValue("team_name")
+        let playerList = playersBlock.getInputTargetBlock("players_list")
+        while (playerList){
+          beneficiaries.players.push(playerList.getFieldValue("playerChoice"))
+          saveTeams(playersBlock.getFieldValue("team_name"),playerList.getFieldValue("playerChoice"))
+          playerList = playerList.getNextBlock()
+        }
+       }
+       if (playersBlock.type === "player"){
+        let p = playersBlock
+        while (p) {
+        beneficiaries.players.push(p.getFieldValue("playerChoice"))
+        savePlayers(p .getFieldValue("playerChoice"))
+        p = p.getNextBlock()
+        }
+       }
+       rule.action.push({
+          beneficiary : beneficiaries,
+          points : sign === "positive"? givenpoints: -givenpoints
+       })
+       action_block = action_block.getNextBlock()
+    }
+
+
+    const soundBlock = rule_blocks.getInputTargetBlock('sound');
+    rule.sound = soundBlock ? soundBlock.getFieldValue("soundChoice"):null
+
+
+    const operatorChoice = rule_blocks.getFieldValue("operator")
+    rule.operator = operatorChoice
+    return rule
+    }
+
+function loadGameContent(content) {
+  // Rules file consists of a json and xml formatted text separated by 2 $ signs
+  const parts = content.split('$$');
+  if (parts.length < 2) {
+    alert('Invalid file'); // Shows a dialog if the rules file doesnt fit the requirement
+    return;
+  }
+  const xmlText = parts[1].trim(); // Takes the 2nd half of the rules file (xml part)
+
+  try {
+
+    const xmlDom = Blockly.utils.xml.textToDom(xmlText); // Convert the xml text into DOM tree to be processed by the blockly library
+
+
+    workspace.clear(); // Clear existing workspace to prevent overlap
+
+
+    Blockly.Xml.domToWorkspace(xmlDom, workspace); // Create the workspace (make the blocks appear on screen) based on the xml DOM tree
+
+    console.log(xmlText)
+
+  } catch (error) {
+
+    alert('Failed to parse the file: ' + error.message);
+   
+  }
+}
+function showToast(message, type) {
+  const toast = document.getElementById('toast')
+  toast.textContent = message
+
+  const colors = {
+    success: '#28a745',
+    error:   '#dc3545'
+  }
+  toast.style.background = colors[type] || colors.info
+
+  toast.style.opacity = '1'
+  toast.style.transform = 'translateX(0)'
+
+  clearTimeout(toast._timer)
+  toast._timer = setTimeout(() => {
+    toast.style.opacity = '0'
+    toast.style.transform = 'translateX(400px)'
+  }, 3000)
+}
+
+function saveSession(){
+  const xml = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace))
+  sessionStorage.setItem('blocklysession',xml)
+  sessionStorage.setItem('loadedGameName',loadedGameName)
+}
+function restoreSession(){
+  const xml = sessionStorage.getItem('blocklysession')
+  const gameName = sessionStorage.getItem('loadedGameName',loadedGameName)
+  if (xml){
+    isRestoring = true
+    const dom = Blockly.utils.xml.textToDom(xml)
+    Blockly.Xml.domToWorkspace(dom, workspace)
+    isRestoring = false
+  }
+  if (gameName){
+    loadedGameName = gameName
+  }
+}
+function navigate(url){
+  if (!isSaved){
+    const proceed = confirm("You haven't saved your changes. Leave anyway?")
+    if (!proceed) return
+  }
+  window.location.href = url
+}
+
+
+function clearWorkspace() { // Clears blocks on screen
+  if (workspace.getAllBlocks().length === 0) return;
+  const proceed = confirm("All blocks will be cleared. Proceed?") 
+  if (!proceed) return
+  workspace.clear();
+  loadedGameName = null
+  
+}
+init();
+
+
+</script>
+
+</body>
+</html>

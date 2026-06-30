@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YouRule - Game Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #ffffff;
+    color: #1d1d1f;
+    padding: 20px;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+
+  h1 { font-size: 20px; margin-bottom: 16px; }
+
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  button, label.file-btn {
+    padding: 8px 16px;
+    border: 1px solid #d0d0d0;
+    background: #f5f5f7;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #1d1d1f;
+  }
+  button:hover { background: #e8e8ea; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  input[type=file] { display: none; }
+
+
+  #start-btn { background: #28a745; color: white; border-color: #28a745; }
+  #start-btn:hover:not(:disabled) { background: #218838; }
+  #end-btn   { background: #dc3545; color: white; border-color: #dc3545; }
+  #end-btn:hover:not(:disabled)   { background: #c82333; }
+  #goback { background: #83b2b7; border-color: #28a745; color: white; }
+
+
+  .status-card {
+    background: #f5f5f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .status-card div { margin: 3px 0; }
+  .status-card .label { color: #666; display: inline-block; min-width: 130px; }
+  .status-card .value { color: #1d1d1f; font-weight: 500; }
+
+
+    .main-layout {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    .players-panel { flex: 0 0 240px; }
+    .log-panel     { flex: 1; min-width: 0; }
+    .map-panel     { flex: 0 0 400px; }
+
+
+    #players-list {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+    height: 400px;
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 13px;
+    }
+    .team-block { margin-bottom: 10px; }
+    .team-name {
+    font-weight: 600;
+    color: #1d1d1f;
+    padding: 6px 8px;
+    background: #eef0f3;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    }
+    .slider-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding-left: 80px;
+  }
+    .slider-label {
+    font-size: 12px;
+    color: #666;
+    min-width: 90px;
+  }
+  .value-display {
+    font-family: ui-monospace, monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0071e3;
+    min-width: 30px;
+    text-align: center;
+  }
+    .player-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 14px;
+    margin: 2px 0;
+    background: white;
+    border: 1px solid #e8e8ea;
+    border-radius: 4px;
+    gap: 8px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    }
+    .player-tag { color: #1d1d1f; }
+    .player-points {
+    font-weight: 600;
+    color: #28a745;
+    background: #e6f4ea;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    flex: 0 0 auto;
+    width: 60px;
+
+    margin-left: 10px;
+    min-width: 28px;
+    text-align: center;
+    }
+
+
+    .players-panel { flex: 0 0 280px; }
+    .log-panel { flex: 1; min-width: 0; }
+    .map-panel { flex: 0 0 400px; }
+
+
+  @media (max-width: 900px) {
+    #players-list { height: auto; max-height: 300px;}
+    .main-layout { flex-direction: column; }
+    .map-panel, .players-panel { flex: 0 0 auto; width: 100%; }
+  }
+
+
+  #field {
+    width: 100%;
+    height: 400px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+    display: block;
+  }
+
+
+  .log-title { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  #event-log {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    height: 400px;
+    overflow-y: auto;
+    background: #fafafa;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 13px;
+  }
+  .event {
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    border-left: 3px solid #ccc;
+    background: white;
+  }
+  .event.match { border-left-color: #28a745; }
+  .event.foul  { border-left-color: #dc3545; color: #a92834; }
+  .event.info  { border-left-color: #0071e3; color: #555; }
+  .event-time { color: #999; font-size: 11px; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+
+<h1>Game Dashboard</h1>
+
+
+<div class="controls">
+  <button id='import-btn' onclick="importGame()">Load Game</button>
+
+
+  <input type="file" id="file-input" accept=".mix,.txt">
+  <button id="goback" onclick="goToEditor()">Back to Rule Editor</button>
+
+
+  <button id="start-btn" onclick="startGame()" disabled>Start game</button>
+  <button id="end-btn"   onclick="endGame()"   disabled>End game</button>
+
+
+  
+  
+  <button onclick="gotosettings()">Settings</button>
+  <button id="clear-game" onclick="clearGame()">Clear Game</button>
+  <div class="slider-row">
+    Position Update Sensitivity:
+    <span class="slider-label">Faster, less precise</span>
+    <input type="range" id="window-slider" min="1" max="20" value="5">
+    <span class="slider-label" style="text-align:right">Slower, more precise</span>
+    <span class="value-display" id="window-value">5</span>
+    
+  </div>
+
+
+</div>
+
+<div id="import-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999;">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:24px; border-radius:8px; min-width:320px; max-width:400px;">
+    <h3 style="margin-bottom:12px;">Import game</h3>
+    <input type="text" id="import-search" placeholder="Search games..." oninput="filterGames(this.value)" style="width:100%; margin-bottom:12px;">
+    <div id="import-list" style="max-height:240px; overflow-y:auto;"></div>
+    <div style="margin-top:16px; display:flex; justify-content:flex-end;">
+      <button onclick="document.getElementById('import-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="status-card">
+  <div><span class="label">Status:</span> <span class="value" id="status-text">No game loaded</span></div>
+</div>
+
+
+<div class="main-layout">
+  <div class="players-panel">
+    <div class="log-title">Score</div>
+    <div id="players-list"></div>
+    </div>
+  <div class="log-panel">
+    <div class="log-title">Event log</div>
+    <div id="event-log">
+      <div class="event info"><span class="event-time">00:00:00</span>Welcome to YouRule! Calibrate your system, load your game rules file, and start the game! </div>
+    </div>
+  </div>
+
+
+  <div class="map-panel">
+    <div class="log-title">Field map</div>
+    <canvas id="field"></canvas>
+  </div>
+
+
+</div>
+
+
+
+
+<script>
+const POSITIONS_URL = 'http://localhost:5002/positions';
+const CONFIG_URL = 'http://localhost:5002/reader_config';
+const GAME_URL = 'http://localhost:5002/games'
+const TICK_MS       = 320;
+const HOLD_OFFSET   = 330;
+const FIELD_OFFSET = 250;
+const CONTACT_THRESHOLD = 400;
+const MAP_PAD  = 1500;
+const MAP_HOLD = 330;
+
+
+const mapCanvas = document.getElementById('field');
+const mapCtx    = mapCanvas.getContext('2d');
+const slider = document.getElementById('window-slider')
+const valueDisplay = document.getElementById('window-value')
+
+let fouledPlayer = {}
+let mapScaleX = 1, mapScaleY= 1;
+let mapOffX = 0, mapOffY = 0;
+let fieldActive = false;
+
+
+let previewTimer = null
+let gameConfig  = null;
+let isRunning   = false;
+let tickTimer   = null;
+let positionsBuffer = {}
+
+let defaultXcoords = []
+let defaultYcoords = []
+let recordedFrames = []
+let loadedGame = null
+let teamScores = {}
+
+let prevHolders = {}
+let currHolders = {}
+
+let timerFired = {}
+let nameByAddress = {}
+let nicknameByAddress = {}
+let fieldType = null;
+let fieldCorners = [];
+let fieldCenter = null;
+let fieldRadius = null;
+let filterWindowSize = 5
+
+
+let playerAddresses = []
+let playerScores = {};
+let playersFoulState = {};
+let passiveRuleState = {};
+let balls = []
+let zoneNames = []
+let loadedZones = []
+let allPlayers = new Set()
+let sequences = []
+let passiveRules = []
+let audioList = {}
+let timerStart = {}
+let timedRules = []
+let gameStartTime = null
+
+let minX = 0
+let maxX = 0
+let minY = 0
+let maxY = 0
+
+
+
+
+slider.addEventListener('input', () => {
+  valueDisplay.textContent = slider.value
+  filterWindowSize = slider.value
+
+ 
+})
+async function importGame(){
+  document.getElementById('import-search').value = ''
+  document.getElementById('import-modal').style.display= 'block'
+  allGames = await(await fetch(GAME_URL)).json()
+  renderGameList(allGames)
+}
+function renderGameList(allGames){
+  const list = document.getElementById('import-list')
+  if (allGames.length === 0){
+    list.innerHTML = '<div style="padding:16px; text-align:center; color:#999; font-size:13px;">No games found.</div>'
+    return
+  }
+  list.innerHTML = ''
+  allGames.forEach(game => {
+    const item = document.createElement("div")
+    item.style.cssText = 'padding:10px 12px; cursor:pointer; border-radius:5px; font-size:13px;'
+    item.textContent = game
+    item.onclick = () => loadGameFromServer(game)
+    list.append(item)
+  })
+}
+
+
+async function loadGameFromServer(name){
+  loadedGame = name
+  try {
+    const result = await fetch(`http://localhost:5002/game/${name}`)
+    console.log("status: ",result.status)
+    const gameFile = await result.json()
+    console.log("file: ",gameFile)
+    if (gameFile.error){ alert ("Could not load game file from server: "+name)}
+
+
+    loadFile(gameFile.content)
+    document.getElementById('import-modal').style.display = 'none'
+  } catch (err) {
+     alert ("File not found: "+name)
+  }
+}
+
+
+function filterGames(query){
+  const q = query.toLowerCase()
+  const filteredSearch = allGames.filter(game=> game.toLowerCase().includes(q))
+  renderGameList(filteredSearch)
+}
+
+
+
+async function loadFile(content) {
+  const parts = content.split('$$');  // The imported file consists of the json and xml formats responsible for creating the game, splitted by "$$"
+  if (parts.length < 2) {
+    logEvent('Invalid file, missing separator', 'info');
+    return;
+  }
+
+
+  try {
+    gameConfig = JSON.parse(parts[0].trim()); // Parse the first part of the file to json format to be read later
+    sessionStorage.setItem("gameConfig", JSON.stringify(gameConfig))
+    
+  } catch (err) {
+    logEvent('Failed to parse JSON: ' + err.message, 'info');
+    return;
+  }
+
+
+  sequences = gameConfig.sequence_rules_list.map(seq => ({
+    rules: seq.rule,
+    penaltySound: seq.penaltySound,
+    currentIndex: 0
+  }))
+
+
+  passiveRules = gameConfig.passive_rules_list || []
+  zoneNames = gameConfig.equipment.zones || []
+  balls = gameConfig.equipment.ballsList || []
+  timedRules = gameConfig.timed_rules_list || []
+
+  console.log("sequences: ",sequences)
+  console.log("passiverules:", passiveRules)
+  await customNames()
+  renderPlayersPanel()      // Render the UI responsible for displaying players and their scores
+  setStatus('Game loaded');
+  logEvent('Loaded game!', 'info');
+  await loadZones();      // Render the UI responsible for displaying the game field's map
+  activateMapField()
+  computeTransform(mapCanvas.clientWidth)
+  await loadAudios();
+  buildPlayerList()
+
+  document.getElementById('start-btn').disabled = false;
+
+  previewTimer = setInterval(async ()=> {
+    try {
+      const response = await fetch(POSITIONS_URL)
+      const positions = await response.json()
+      const filtered = filterReadings(positions)
+      drawMapTags(filtered)
+    }
+    catch (err) {
+      console.log("unable to draw tags")
+    }
+  }, TICK_MS)
+}
+
+async function loadAudios() {
+  try{
+    const result = await fetch("http://localhost:5002/audios")
+    const audioNames = await result.json()
+
+    audioNames.forEach(name => {
+      const a = new Audio('http://localhost:5002/audio/'+name)
+      a.load()
+      audioList[name] = a
+    })
+    const gamestartAudio = new Audio('soundeffects/gamestart.mp3')
+    gamestartAudio.load()
+    audioList["gamestart"] = gamestartAudio
+    console.log("audiolist:",audioList)
+  } catch (err) {
+    console.log("Could not load audios")
+  }
+}
+function playSound(name){
+  const a = audioList[name]
+  if (!a) {
+    console.log("did not play sound")
+    return
+  }
+  const clip= a.cloneNode()
+  clip.play().catch(err => console.log(err))
+}
+function buildPlayerList(){ 
+  playerAddresses = [] 
+  const teams = gameConfig.players.teams || [] 
+  const others = gameConfig.players.otherPlayers || [] 
+  teams.forEach(team => team.players.forEach(p => { 
+    if (p !== "None") playerAddresses.push(p) })) 
+    others.forEach(p => playerAddresses.push(p)) 
+  } 
+
+
+async function startGame() {
+  clearInterval(previewTimer)     // Clear the timer that was responsible for displaying a preview of players location on the field map
+  previewTimer = null
+  setStatus('Game running')  // Display game status
+  if (!gameConfig) return;  // Exit safely if theres no game file loaded
+  try {
+    const response = await fetch(CONFIG_URL)      // Fetch game configuration data, including filter's window size and field's parameters
+  } catch (err){
+    console.log("Server offline")
+    logEvent('Cannot reach server', 'foul');
+    endGame();
+    return
+  }
+  sequences.forEach(seq => seq.currentIndex = 0)  // Set the pointer to point at the first instance of the sequential rules list
+  prevHolders = {}   
+  currHolders = {} 
+  playerScores = {}     
+  passiveRuleState = {}     
+  timerFired = {}
+  teamScores={}
+  gameStartTime = Date.now()
+  isRunning = true;  
+  timedRules.forEach((rule,i) => {
+    timerStart[i] = Date.now()
+  })
+
+  
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('end-btn').disabled   = false;
+
+  playSound("gamestart")
+  setTimeout(()=> {    
+    fitMap()
+    activateMapField()
+  }, 0)
+  playSound()
+  logEvent('Game started', 'info')  
+  tickTimer = setInterval(tick, TICK_MS); 
+}
+
+
+async function loadZones(){
+        console.log(zoneNames)
+        loadedZones = []
+        if (zoneNames.length === 0 ) return null
+        const zonesData = zoneNames.map(name => fetchZone(name))
+        const results = await Promise.all(zonesData)
+        loadedZones = results
+}
+async function fetchZone(zoneName) {
+  try {
+    const result = await fetch(`http://localhost:5002/zone/${zoneName}`)
+    const data = await result.json()
+    if (data.error) return null
+    return { name: zoneName, ...data}
+  } catch (err) {
+    return null
+  }
+}
+
+
+function renderPlayersPanel() {
+  const container = document.getElementById('players-list')
+  container.innerHTML = ''
+
+
+  if (!gameConfig || !gameConfig.players) return
+
+  const teams = gameConfig.players.teams || []
+  const others= gameConfig.players.otherPlayers || []
+for (const team of teams) {
+  const teamBlock = document.createElement('div')
+  teamBlock.className = 'team-block'
+
+
+  const teamName = document.createElement('div')
+  teamName.className = 'team-name'
+  teamName.textContent = 'Team ' + team.name
+
+
+  const teamScore = document.createElement('input')
+  teamScore.type = 'number'
+  teamScore.className = 'player-points'
+  teamScore.id = `team-points-${team.name}`
+  teamScore.value = teamScores[team.name] || 0
+  teamScore.addEventListener('change', () => {
+    const v= parseInt(teamScore.value)
+    teamScores[team.name] = isNaN? 0:v
+  })
+  teamName.appendChild(teamScore)
+
+
+  teamBlock.appendChild(teamName)
+
+
+  for (const playerId of team.players) {
+    if (playerId === "None") continue
+    const nickname = nicknameByAddress[playerId]
+    const displayName = nameByAddress[playerId]
+    teamBlock.appendChild(createTeamPlayerRow(playerId, displayName, nickname))  // no score badge
+  }
+
+
+  container.appendChild(teamBlock)
+}
+
+
+
+
+
+  
+
+
+  if (others.length > 0) {
+    const otherBlock = document.createElement('div')
+    otherBlock.className = 'team-block'
+
+
+    const otherName = document.createElement('div')
+    otherName.className = 'team-name'
+    otherName.textContent = 'Players'
+    otherBlock.appendChild(otherName)
+
+
+    for (const playerId of others) {
+      otherBlock.appendChild(createPlayerRow(playerId, nameByAddress[playerId], nicknameByAddress[playerId]))
+    }
+
+
+    container.appendChild(otherBlock)
+  }
+  console.log("teams: ",teams," others:", others)
+}
+function createTeamPlayerRow(playerId, displayName, nickname){
+  const row = document.createElement('div')
+  row.className = 'player-row'
+  row.dataset.tag = playerId
+
+
+  const tagEl = document.createElement('span')
+  tagEl.className = 'player-tag'
+  tagEl.textContent = displayName ? nickname + ' - ' + displayName : nickname
+
+
+  row.appendChild(tagEl)
+
+  return row
+}
+
+
+
+async function customNames(){
+    const response = await fetch('http://localhost:5002/reader_config')
+    const data = await response.json()
+    let displayName = ""
+    data.remotetags.forEach(tag => {
+        nameByAddress[tag.address] = tag.custom_name? tag.custom_name : ""
+        nicknameByAddress[tag.address] = tag.nickname
+        
+    })
+    data.ball_id.forEach(tag => {
+        nameByAddress[tag.address] = tag.custom_name? tag.custom_name : ""
+        nicknameByAddress[tag.address] = tag.nickname
+        
+    })
+    data.anchors.forEach(coordinate => {
+      defaultXcoords.push(parseInt(coordinate.x))
+      defaultYcoords.push(parseInt(coordinate.y))
+    })
+
+}
+
+function createPlayerRow(playerId,displayName,nickname) {
+  const row = document.createElement('div')
+  row.className = 'player-row'
+  row.dataset.tag = playerId
+
+    
+  const tagEl = document.createElement('span')
+  tagEl.className = 'player-tag'
+  if (!displayName) { tagEl.textContent = nickname}
+  if (displayName) { tagEl.textContent = nickname+' - '+displayName}
+
+
+  const pointsEl = document.createElement('input')
+  pointsEl.className = 'player-points'
+  pointsEl.id = `points-${playerId}`
+  pointsEl.type = 'number'
+  pointsEl.value = playerScores[playerId] || 0
+  pointsEl.style.width = '50px'
+  pointsEl.addEventListener('change' , ()=> {
+    const v = parseInt(pointsEl.value)
+    playerScores[playerId] = isNaN(v) ? 0 : v
+  })
+
+
+  row.appendChild(tagEl)
+  row.appendChild(pointsEl)
+
+
+  return row
+}
+
+
+async function endGame() {
+  isRunning = false; // Set the game running status to false
+  clearInterval(tickTimer);  // Clear the timer element that was calling the "tick" function earlier
+  tickTimer = null;
+  const d = new Date()
+  const options = {day:'numeric',month:'short',year: 'numeric', hour:'2-digit', minute: '2-digit', hour12: true}
+  let name = d.toLocaleString('en-GB',options)
+  name = name.replace(/[:,]/g,'').replace(/\s+/g,'-')
+  try {
+    const result = await fetch(`http://localhost:5002/records/${name}`,  {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({frames: recordedFrames})
+    })
+    
+  } catch (err) {
+    
+  }
+
+  document.getElementById('start-btn').disabled = false;  // Highlight and enable start game button
+  document.getElementById('end-btn').disabled   = true;   // Shadow and disable end game button
+  setStatus('Game ended');
+  logEvent('Game ended', 'info');
+}
+
+// An async function that runs every TICK_MS (milliseconds) when the user starts the game
+async function tick() {
+  if (!isRunning) return
+  let positions;
+  try {
+    const response = await fetch(POSITIONS_URL); // Fetch positions values from location POSITIONS_URL
+    positions = await response.json(); // Convert incoming readings to json
+
+  } catch (err) {
+    console.log("Server offline")
+    logEvent('Cannot reach positions server', 'foul');
+    endGame();
+    return
+  }
+  const frame = { t: Date.now() - gameStartTime, positions: {}}
+  playerAddresses.forEach(address => {
+    const pos = positions[address]
+    const id = nameByAddress[address]? nameByAddress[address] : nicknameByAddress[address]? nicknameByAddress[address] : address
+    if (pos) frame.positions[id] = {x: pos.x, y: pos.y}
+  })
+  recordedFrames.push(frame) 
+
+  if (!isRunning) return
+  positions = filterReadings(positions);
+  drawMapTags(positions);
+
+
+  findBallHolder(positions)  // Find the person holding each ball
+  checkSequenceRules(positions)
+  checkPassiveRules(positions)
+  checkTimer()
+}
+function checkTimer(){
+  timedRules.forEach((rule,i) => {
+    if (timerFired[i]) return
+    const duration = parseFloat(rule.duration) * 60 * 1000
+    if (Date.now() - timerStart[i] >= duration){
+      timerFired[i] = true
+      logEvent("A timed event has been triggered! ", 'match')
+
+
+      rule.action.forEach(action => {
+        if (action.type && action.type === "nothing") return
+        if (action.type && action.type === "endgame"){
+          endGame()
+          return
+        }
+
+
+        const ben = action.beneficiary
+        if (!ben) return
+
+
+        if (ben.team_name){
+          // team award: single team bucket
+          teamScores[ben.team_name] = (teamScores[ben.team_name] || 0) + action.points
+          const el = document.getElementById(`team-points-${ben.team_name}`)
+          if (el) el.value = teamScores[ben.team_name]
+          const verb = action.points >= 0 ? "gained" : "lost"
+          logEvent(`Team ${ben.team_name} ${verb} ${Math.abs(action.points)} point(s). Total: ${teamScores[ben.team_name]}`, 'match')
+        } else {
+          // individual award
+          const recipients = ben.players || []
+          recipients.forEach(tag => {
+            const prev = playerScores[tag] || 0
+            playerScores[tag] = prev + action.points
+            const el = document.getElementById(`points-${tag}`)
+            if (el) el.value = playerScores[tag]
+            const name = nameByAddress[tag] || nicknameByAddress[tag]
+            const verb = action.points >= 0 ? "gained" : "lost"
+            logEvent(`Player ${name} has ${verb} ${Math.abs(action.points)} point(s). Total point(s): ${playerScores[tag]}`, 'match')
+          })
+        }
+      })
+
+
+      if (rule.sound){
+        playSound(rule.sound)
+      }
+    }
+
+
+    if (rule.mode === "repeat"){
+      timerFired[i] = false
+      timerStart[i] = Date.now()
+    }
+  })
+}
+
+
+
+
+function checkSequenceRules(positions){
+    sequences.forEach((seq,i) => {
+      while (seq.currentIndex < seq.rules.length && seq.rules[seq.currentIndex].enabled!== "yes"){
+        seq.currentIndex++
+      }
+        if (seq.currentIndex >= seq.rules.length){
+            seq.currentIndex = 0
+            console.log("One sequence has ended, restarting")
+            return
+        }
+        const currentRule = seq.rules[seq.currentIndex]
+       
+        if (evaluateConditions(currentRule, positions)){
+            fireRule(currentRule)
+            seq.currentIndex++
+        }
+      } 
+    )
+}
+function filterReadings(readings){
+  let filtered = {}
+  for (let tag in readings){
+    const windowSize = parseInt(filterWindowSize)
+    if (!positionsBuffer[tag]) positionsBuffer[tag] = []
+    positionsBuffer[tag].push(readings[tag])
+    if (positionsBuffer[tag].length > windowSize || window < positionsBuffer[tag].length) {
+      positionsBuffer[tag].splice(0, positionsBuffer[tag].length - windowSize)
+    }
+    
+
+
+    const bufferList = positionsBuffer[tag]
+    const avg_X = bufferList.reduce((sum,r)=> sum+r.x ,0) / bufferList.length
+    const avg_Y = bufferList.reduce((sum,r)=> sum+r.y ,0) / bufferList.length
+    filtered[tag] = {
+      x: avg_X,
+      y: avg_Y,
+    }
+  }
+  return filtered
+}
+
+
+function resolveActor(spec){
+  const players = (spec && spec.players) ? spec.players : []
+  let mode
+  if (spec && spec.team_name) mode = 'any'      // team  -> OR
+  else if (players.length > 1) mode = 'all'     // stack -> AND
+  else mode = 'any'                             // single
+  return { players, mode }
+}
+
+
+// Does the actor satisfy a per-player predicate, honoring any/all?
+function actorSatisfies(spec, predicate){
+  const { players, mode } = resolveActor(spec)
+  if (players.length === 0) return false
+  return mode === 'all' ? players.every(predicate) : players.some(predicate)
+}
+
+
+// Plain membership check (used for single-instant events like a throw endpoint)
+function matchesActorTag(spec, tag){
+  const players = (spec && spec.players) ? spec.players : []
+  return players.includes(tag)
+}
+
+
+// Is this tag one of the balls in play?
+function isBallTag(tag){
+  return balls.includes(tag)
+}
+
+
+
+
+function evaluateConditions(currentRule, positions){
+  const conditions = currentRule.conditions || []
+  if (conditions.length === 0) return false
+  const operator = currentRule.operator || "and"
+  switch (operator){
+    case "and": return conditions.every(c => checkIndividualCondition(c, positions))
+    case "or":  return conditions.some(c  => checkIndividualCondition(c, positions))
+    case "not": return conditions.every(c => !checkIndividualCondition(c, positions)) // none true
+  }
+  return conditions.every(c => checkIndividualCondition(c, positions))
+}
+
+
+function checkIndividualCondition(condition, positions){
+  switch (condition.type){
+    case "player_throwsball":   return isBallThrownCorrectly(condition, positions)
+    case "player_contact":      return arePlayersContacting(condition, positions)
+    case "player_insidefield":  return isPlayerInsideField(condition, positions)
+    case "player_outsidefield": return isPlayerOutsideField(condition, positions)
+  }
+  return false
+}
+
+
+function isBallThrownCorrectly(condition,positions){
+  const ballTag = condition.ball
+  if (condition.receiver && condition.receiver.zone){ 
+    const zone = loadedZones.find(z => z && z.name === condition.receiver.zone) 
+    if (!zone) return false 
+    const ballPos = positions[ballTag] 
+    if (!ballPos) return false 
+    if (!isPointInZone(ballPos, zone)) return false 
+    const lastHolder = prevHolders[ballTag] != null ? prevHolders[ballTag] : null 
+    return matchesActorTag(condition.passer, lastHolder) 
+  } 
+  const prev = prevHolders[ballTag] != null ? prevHolders[ballTag] : null
+  const curr = currHolders[ballTag] != null ? currHolders[ballTag] : null
+  if (prev === null || curr === null) return false
+  return matchesActorTag(condition.passer, prev) &&
+         matchesActorTag(condition.receiver, curr)
+}
+
+
+function withinContact(a, b){
+  return Math.hypot(a.x - b.x, a.y - b.y) < CONTACT_THRESHOLD
+}
+
+
+function arePlayersContacting(condition, positions){
+  const receiver = condition.receiver
+  const receiverEmpty = !receiver || !receiver.players || receiver.players.length === 0
+
+
+  return actorSatisfies(condition.passer, p => {
+    const pPos = positions[p]
+    if (!pPos) return false
+
+
+    if (receiverEmpty){
+      // empty receiver -> "contacts anyone" on the field
+      return Object.keys(positions).some(other => {
+        if (other === p || isBallTag(other)) return false
+        return withinContact(pPos, positions[other])
+      })
+    }
+
+
+    return actorSatisfies(receiver, r => {
+      if (r === p) return false
+      const rPos = positions[r]
+      if (!rPos) return false
+      return withinContact(pPos, rPos)
+    })
+  })
+}
+
+
+function isPlayerInsideField(condition, positions){
+  const zone = loadedZones.find(z => z && z.name === condition.zone)
+  if (!zone) return false
+  if (condition.player && condition.player.ball){
+    const pos = positions[condition.player.ball]
+    if (!pos) return false
+    return isPointInZone(pos,zone)
+  }
+  return actorSatisfies(condition.player, tag => {
+    const pos = positions[tag]
+    if (!pos) return false
+    return isPointInZone(pos, zone)
+  })
+}
+
+
+function isPlayerOutsideField(condition, positions){
+  const zone = loadedZones.find(z => z && z.name === condition.zone)
+  if (!zone) return false
+  if (condition.player && condition.player.ball){
+    const pos = positions[condition.player.ball]
+    if (!pos) return false
+    return !isPointInZone(pos,zone)
+  }
+  return actorSatisfies(condition.player, tag => {
+    const pos = positions[tag]
+    if (!pos) return false
+    return !isPointInZone(pos, zone)
+  })
+}
+
+
+// Per-condition zone membership, reading from loadedZones (same source as the map)
+function isPointInZone(point, zone){
+  if (!zone) return false
+  if (zone.shape === "circular"){
+    const cx = parseFloat(zone.center.x), cy = parseFloat(zone.center.y)
+    const r  = parseFloat(zone.radius)
+    return Math.hypot(point.x - cx, point.y - cy) <= r
+  }
+  if (zone.shape === "polygon"){
+    return isInsidePolygon(point, zone.corners)
+  }
+  return false
+}
+
+
+function isInsidePolygon(point, corners){
+  if (!corners || corners.length < 3) return false
+  let inside = false
+  for (let i = 0, j = corners.length - 1; i < corners.length; j = i++){
+    const xi = parseFloat(corners[i].x), yi = parseFloat(corners[i].y)
+    const xj = parseFloat(corners[j].x), yj = parseFloat(corners[j].y)
+    const hit = ((yi > point.y) !== (yj > point.y)) &&
+                (point.x < (xj - xi) * (point.y - yi) / (yj - yi) + xi)
+    if (hit) inside = !inside
+  }
+  return inside
+}
+
+
+
+
+function findBallHolder(positions) {
+  balls.forEach(ballTag => {
+    const ball = positions[ballTag]   // Find the position of this ball
+    if (!ball) return                 // Skip safely if its position cannot be found
+
+
+    let newHolder = null
+    let closestDist = Infinity
+    for (const tag of Object.keys(positions)) {
+      if (isBallTag(tag)) continue    // a ball cannot hold a ball
+      const player = positions[tag]
+      if (!player) continue
+
+
+      const dx = player.x - ball.x
+      const dy = player.y - ball.y
+      const distance = Math.hypot(dx, dy)
+      if (distance < closestDist && distance < HOLD_OFFSET){
+        closestDist = distance
+        newHolder = tag
+      }
+    }
+
+
+    let curr = currHolders[ballTag] != null ? currHolders[ballTag] : null
+    let prev = prevHolders[ballTag] != null ? prevHolders[ballTag] : null
+
+
+    if (newHolder !== curr) {
+      if (curr !== null) {
+        prev = curr
+        prevHolders[ballTag] = curr
+      }
+      curr = newHolder
+      currHolders[ballTag] = newHolder
+
+
+      if (curr === null) {
+        // ball became airborne
+        if (prev !== null) {
+          console.log("Ball flying:", ballTag)
+        }
+      } else {
+        // someone has the ball
+        if (prev !== null && curr !== null && prev !== curr) {
+          // throw from prev to curr
+          logEvent('Ball thrown: Player ' + (nameByAddress[prev] || nicknameByAddress[prev])  + ' to Player ' + (nameByAddress[curr] || nicknameByAddress[curr]),'match')
+          onBallThrown(prev, curr, ballTag)
+        } else {
+          
+          console.log("Player caught their own ball")
+        }
+      }
+    }
+  })
+}
+function onBallThrown(from, to, ballTag){
+  sequences.forEach(seq => {
+    if (seq.currentIndex >= seq.rules.length) return
+    const currentRule = seq.rules[seq.currentIndex]
+
+
+    const throwConditions = currentRule.conditions.filter(c => c.type === "player_throwsball")
+    if (throwConditions.length === 0) return
+
+
+    const matchesExpected = throwConditions.some(c =>
+      c.ball === ballTag &&
+      matchesActorTag(c.passer, from) &&
+      matchesActorTag(c.receiver, to)
+    )
+
+
+    if (!matchesExpected){
+      if (to in fouledPlayer) {
+        if (!(from in fouledPlayer)) delete fouledPlayer[to]
+        return
+      }
+      logEvent(`FOUL: the last player has broken the sequence.`, 'foul')
+      if (seq.penaltySound){
+        playSound(seq.penaltySound)
+      }
+      fouledPlayer[from] = 'fouled'
+    }
+  })
+}
+
+
+function checkPassiveRules(positions){  
+    passiveRules.forEach((rule,i)=> {
+        const isEnabled = rule.enabled === "yes"? true:false
+        if (!isEnabled) return
+        const isRuleActive = evaluateConditions(rule,positions)
+        const wasRuleActiveEarlier = passiveRuleState[i]
+        passiveRuleState[i] = isRuleActive
+        if (isRuleActive && !wasRuleActiveEarlier){
+          fireRule(rule)
+        }
+    })
+}
+
+
+function fireRule(rule){
+  rule.action.forEach(action => {
+    logEvent("Rule ("+rule.rule_name+") has been triggered!",'match')
+    if (action.type && action.type === "endgame"){
+      endGame()
+      return
+    }
+    if (action.type && action.type === "nothing") return
+    const ben = action.beneficiary
+    if(!ben) return
+    if (ben.team_name){
+      teamScores[ben.team_name] = (teamScores[ben.team_name] || 0) + action.points 
+      const el = document.getElementById(`team-points-${ben.team_name}`) 
+      if (el) el.value = teamScores[ben.team_name] 
+        const verb = action.points >= 0 ? "gained" : "lost" 
+        logEvent(`Team ${ben.team_name} ${verb} ${Math.abs(action.points)} point(s). Total point(s): ${teamScores[ben.team_name]}`, 'match') 
+     
+  } else {
+    const recipients = (action.beneficiary && action.beneficiary.players) || []
+    recipients.forEach(tag => {
+      const prev = playerScores[tag] || 0
+      playerScores[tag] = prev + action.points
+
+
+      const el = document.getElementById(`points-${tag}`)
+      if (el) el.value = playerScores[tag]
+      const name = nameByAddress[tag] || nicknameByAddress[tag]
+      const verb = action.points >= 0 ? "gained" : "lost"
+      logEvent(`Player ${name} has ${verb} ${Math.abs(action.points)} point(s). Total point(s): ${playerScores[tag]}`, 'match')
+    })
+  }
+  })
+
+
+  if (rule.sound){
+        playSound(rule.sound)
+  }
+}
+
+
+
+
+function logEvent(text, type) {
+  // This function is responsible for logging the game events inside the "Event log" box
+  if (!type) type = 'info';
+  const log = document.getElementById('event-log');
+
+
+  const placeholder = log.querySelector('.info');
+  if (placeholder && placeholder.textContent.includes('Waiting')) {
+    placeholder.remove();
+  }
+
+
+  const div = document.createElement('div');
+  div.className = 'event ' + type;
+  const time = new Date().toLocaleTimeString();
+  div.innerHTML = '<span class="event-time">' + time + '</span>' + text;
+
+
+  log.prepend(div);
+
+
+  while (log.children.length > 100) log.lastChild.remove();
+}
+
+
+
+
+function setStatus(text) {
+  // This function is responsible for displaying the game's status inside the "Status" box, top middle of the game page
+  document.getElementById('status-text').textContent = text;
+}
+
+function getBounds() {
+  let xs = []
+  let ys = []
+  loadedZones.forEach(zone => {
+    if (zone.shape === "polygon"){
+      zone.corners.forEach(c => {
+        xs.push(c.x)
+        ys.push(c.y)
+      })
+    }
+    if (zone.shape === "circular"){
+      xs.push(zone.center.x - zone.radius, zone.center.x + zone.radius)
+      ys.push(zone.center.y - zone.radius, zone.center.y + zone.radius)
+    }
+  })
+if (xs.length === 0) { 
+  console.log("no zone")
+  return { minX: Math.min(...defaultXcoords) + 100, maxX: Math.max(...defaultXcoords) - 100, minY: Math.min(...defaultYcoords) + 100, maxY: Math.max(...defaultYcoords) - 100}
+  for (const tag in positionsBuffer) { 
+    const buf = positionsBuffer[tag] 
+    if (!buf || buf.length === 0) continue 
+    const last = buf[buf.length - 1] 
+    xs.push(last.x); ys.push(last.y) } 
+    } 
+  return {
+    minX: Math.min(...xs),
+    maxX: Math.max(...xs),
+    minY: Math.min(...ys),
+    maxY: Math.max(...ys)
+  }
+}
+
+
+
+
+function fitMap() {
+  const css = mapCanvas.clientWidth
+  const dpr = window.devicePixelRatio || 1
+  mapCanvas.width  = css * dpr
+  mapCanvas.height = css * dpr
+  mapCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  if (fieldActive) computeTransform(css)
+  redrawStatic()
+}
+
+
+
+
+function computeTransform(cssSize) {
+  const bounds = getBounds()
+  if (!bounds) return
+
+
+  minX = bounds.minX
+  maxX = bounds.maxX
+  minY = bounds.minY
+  maxY = bounds.maxY
+
+
+  const margin = (cssSize / 12) * 2
+  const inner = cssSize - 2 * margin
+
+
+  // uniform scale -- same for both axes so circles stay round
+  const scale = Math.min(
+    inner / (maxX - minX),
+    inner / (maxY - minY)
+  )
+  mapScaleX = scale
+  mapScaleY = scale
+
+
+  // center the content in the canvas since uniform scale may leave extra space on one axis
+  const usedWidth  = (maxX - minX) * scale
+  const usedHeight = (maxY - minY) * scale
+  mapOffX = margin + (inner - usedWidth) / 2
+  mapOffY = margin + (inner - usedHeight) / 2
+}
+
+
+
+
+
+function toCanvas(x, y) {
+  return [
+    mapOffX + (x - minX) * mapScaleX,
+    mapOffY + (maxY - y) * mapScaleY,
+  ]
+}
+
+
+
+
+// ---- the empty grid: shown before a game starts and after it ends ----
+function drawGrid() {
+  const w = mapCanvas.clientWidth
+  mapCanvas.width = w
+  mapCanvas.height = w
+  mapCtx.clearRect(0, 0, w, w)
+  mapCtx.fillStyle = '#fafafa'
+  mapCtx.fillRect(0, 0, w, w)
+
+
+  mapCtx.strokeStyle = '#e8e8ea'
+  mapCtx.lineWidth = 1
+  const step = w / 12
+  for (let i = 1; i < 12; i++) {
+    mapCtx.beginPath()
+    mapCtx.moveTo(i * step, 0); mapCtx.lineTo(i * step, w)
+    mapCtx.moveTo(0, i * step); mapCtx.lineTo(w, i * step)
+    mapCtx.stroke()
+  }
+  mapCtx.strokeStyle = '#d0d0d0'
+  mapCtx.strokeRect(0.5, 0.5, w - 1, w - 1)
+}
+
+
+
+
+// ---- picks which shape to draw based on fieldType ----
+function redrawStatic() {
+  mapCtx.clearRect(0,0,mapCanvas.width,mapCanvas.height)
+  drawGrid()
+  if (!fieldActive) return
+  drawZones()
+}
+const ZONE_COLORS = [
+  { fill: 'rgba(40,167,69,0.06)',  stroke: '#28a745' },
+  { fill: 'rgba(0,113,227,0.06)',  stroke: '#0071e3' },
+  { fill: 'rgba(220,53,69,0.06)',  stroke: '#dc3545' },
+  { fill: 'rgba(255,149,0,0.06)',  stroke: '#ff9500' },
+  { fill: 'rgba(111,66,193,0.06)', stroke: '#6f42c1' },
+]
+
+
+function drawZones() {
+  loadedZones.forEach((zone, index) => {
+    const color = ZONE_COLORS[index % ZONE_COLORS.length]
+
+
+    mapCtx.fillStyle   = color.fill
+    mapCtx.strokeStyle = color.stroke
+    mapCtx.lineWidth   = 1.5
+
+
+    if (zone.shape === "rectangular" || zone.shape === "polygon") {
+      drawPolygonField(zone.corners)
+    }
+    if (zone.shape === "circular") {
+      drawCircularField(zone.center, zone.radius)
+    }
+
+
+    drawZoneLabel(zone, color.stroke)
+  })
+}
+
+
+
+
+function drawPolygonField(corners) {
+  // draw the polygon edge by edge (works for rotated rectangles)
+  mapCtx.fillStyle = 'rgba(40,167,69,0.05)'
+  mapCtx.strokeStyle = '#28a745'
+  mapCtx.lineWidth = 1.5
+  mapCtx.beginPath()
+  const [startX, startY] = toCanvas(corners[0].x, corners[0].y)
+  mapCtx.moveTo(startX, startY)
+  for (let i = 1; i < corners.length; i++) {
+    const [px, py] = toCanvas(corners[i].x, corners[i].y)
+    mapCtx.lineTo(px, py)
+  }
+  mapCtx.closePath()
+  mapCtx.fill()
+  mapCtx.stroke()
+
+
+  for (const c of corners) {
+    const [px, py] = toCanvas(c.x, c.y)
+    mapCtx.fillStyle = '#ff9500'
+    mapCtx.beginPath()
+    mapCtx.arc(px, py, 4, 0, Math.PI * 2)
+    mapCtx.fill()
+
+  }
+}
+
+
+
+
+function drawCircularField(center,radius) {
+  const [cx, cy] = toCanvas(center.x, center.y)
+  const scaledRadius = radius * mapScaleX  // convert world units to canvas pixels
+
+
+  mapCtx.fillStyle = 'rgba(40,167,69,0.05)'
+  mapCtx.strokeStyle = '#28a745'
+  mapCtx.lineWidth = 1.5
+  mapCtx.beginPath()
+  mapCtx.arc(cx, cy, scaledRadius, 0, Math.PI * 2)
+  mapCtx.fill()
+  mapCtx.stroke()
+}
+
+
+function drawZoneLabel(zone, color) {
+  let cx, cy
+  if (zone.shape === "polygon") {
+    cx = zone.corners.reduce((s, c) => s + c.x, 0) / zone.corners.length
+    cy = zone.corners.reduce((s, c) => s + c.y, 0) / zone.corners.length
+  } else {
+    cx = zone.center.x
+    cy = zone.center.y
+  }
+  const [px, py] = toCanvas(cx, cy)
+  mapCtx.fillStyle = color
+  mapCtx.font = '11px ui-monospace, monospace'
+  mapCtx.textAlign = 'center'
+  mapCtx.fillText(zone.name, px, py)
+  mapCtx.textAlign = 'left'
+}
+
+
+
+
+function isInField(p) {
+  return loadedZones.some(zone => zone && isPointInZone(p,zone))
+}
+function isInsideCircle(point, center, radius){
+  const distance = Math.hypot(point.x - center.x, point.y - center.y)
+  return distance <= radius
+}
+function isInsideQuadrilateral(point, corners) {
+  let sign = null
+  for (let i = 0; i < 4; i++) {
+    const a = corners[i]
+    const b = corners[(i + 1) % 4]
+    const cross = (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x)
+    if (cross === 0) continue
+    const currentSign = cross > 0 ? 1 : -1
+    if (sign === null) sign = currentSign
+    else if (sign !== currentSign) return false
+  }
+  return true
+}
+
+
+
+
+function drawMapTags(positions) {
+  if (!fieldActive) return
+  redrawStatic()
+
+
+  for (const tag of Object.keys(positions)) {
+    const p = positions[tag]
+    if (!p || isBallTag(tag)) continue
+    const player = nameByAddress[tag]? nameByAddress[tag]:nicknameByAddress[tag]?nicknameByAddress[tag]:tag
+    plotDot(player, p, false)
+  }
+
+
+  balls.forEach(ballTag => {
+    const bp = positions[ballTag]
+    const displayName = nameByAddress[ballTag]? nameByAddress[ballTag]:nicknameByAddress[ballTag]
+    if (bp) {
+      plotDot(displayName, bp, true)
+    }
+  })
+}
+
+
+
+
+function plotDot(label, p, isBall) {
+  const [px, py] = toCanvas(p.x, p.y)
+  const out = !isInField(p)
+  mapCtx.fillStyle = out ? '#dc3545' : (isBall ? '#8a5a00' : '#0071e3')
+  mapCtx.beginPath()
+  mapCtx.arc(px, py, isBall ? 7 : 6, 0, Math.PI * 2)
+  mapCtx.fill()
+  mapCtx.fillStyle = '#1d1d1f'
+  mapCtx.font = '11px ui-monospace, monospace'
+  mapCtx.fillText(label, px + 9, py + 4)
+}
+
+
+function activateMapField() {
+  fieldActive = true
+  if (loadedZones.length === 0) return
+  console.log("activateMapField: clientWidth=", mapCanvas.clientWidth, "fieldtype: ",fieldType, "fieldradius: ",fieldRadius, "fieldcenter: ",fieldCenter)
+  computeTransform(mapCanvas.clientWidth)
+  fieldActive = true
+  redrawStatic()
+}
+
+
+
+
+function deactivateMap() {
+  fieldActive = false
+  drawGrid()
+}
+
+function gotosettings(){
+  if (isRunning) {
+    const proceed = confirm("Accessing Settings will end ongoing game. Proceed?")
+    if (!proceed) return
+    window.location.href = 'settings.html#tags'
+  }
+  window.location.href = 'settings.html#tags'
+}
+
+function goToEditor(){
+    if (isRunning) {
+    const proceed = confirm("Accessing Rule Editor will end ongoing game. Proceed?")
+    if (!proceed) return
+    sessionStorage.removeItem("gameConfig")
+    window.location.href = 'final_blockly_screen.html'
+    
+  }
+  sessionStorage.removeItem("gameConfig")
+  window.location.href = 'final_blockly_screen.html'
+}
+
+function clearGame() {
+  const proceed = confirm("Clearing game will delete all game dashboard data. Proceed?")
+  if (!proceed) return
+  sessionStorage.removeItem("gameConfig")
+  gameConfig = null
+  balls = []
+  prevHolders = {}
+  currHolders = {}
+  sequences = []
+  passiveRules = []
+  playerScores = {}
+  allPlayers = new Set()
+  fieldType = null
+  zoneNames = []
+  loadedZones = []
+  fieldCenter = null
+  fieldRadius = null
+  deactivateMap()
+
+
+  document.getElementById('players-list').innerHTML = ''
+  document.getElementById('start-btn').disabled = true
+  const log = document.getElementById('event-log')
+  while (log.children.length > 1){
+    log.firstChild.remove()
+  }
+  deactivateMap()
+  setStatus('No game loaded')
+}
+
+
+
+
+window.addEventListener('resize',fitMap);
+fitMap();
+
+
+window.addEventListener('load', async () => {
+  const saved = sessionStorage.getItem("gameConfig")
+  if (saved) {
+    setStatus("Game loaded")
+    gameConfig = JSON.parse(saved)
+    sequences = gameConfig.sequence_rules_list.map(seq => ({
+    rules: seq.rule,
+    penaltySound: seq.penaltySound,
+    currentIndex: 0
+  }))
+
+
+  passiveRules = gameConfig.passive_rules_list
+  zoneNames = gameConfig.equipment.zones || []
+  balls = gameConfig.equipment.ballsList || []
+  timedRules = gameConfig.timed_rules_list
+  console.log("sequences: ",sequences)
+  console.log("passiverules:", passiveRules)
+  await customNames()
+  await loadZones()   
+  activateMapField()
+  computeTransform(mapCanvas.clientWidth)
+  await loadAudios()
+  
+
+  renderPlayersPanel() 
+  buildPlayerList()   
+  setStatus('Game loaded');
+  logEvent('Loaded game!', 'info');
+
+
+
+  document.getElementById('start-btn').disabled = false;
+  previewTimer = setInterval(async ()=> {
+    try {
+      const response = await fetch(POSITIONS_URL)
+      const positions = await response.json()
+      const filtered = filterReadings(positions)
+      drawMapTags(filtered)
+    }
+    catch (err) {
+      console.log("unable to draw tags")
+    }
+  }, TICK_MS)
+   }
+})
+
+
+</script>
+</body>
+</html>
+
+
+
+
